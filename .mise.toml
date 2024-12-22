@@ -1,0 +1,41 @@
+[tools]
+dprint = "0.47.2"
+watchexec = "2.1.2"
+go = "1.23.1"
+
+[tasks."setup"]
+description = "Setup the project"
+run = [
+  # Install dependencies
+  "mise install",
+  "go mod download",
+  "go mod tidy",
+]
+sources = ["go.mod", ".mise.toml", "*/**/*.go"]
+outputs = ["go.sum"]
+
+[tasks."dev"]
+description = "Run the server and watch for changes"
+run = "mise watch -t serve -r"
+
+[tasks."serve"]
+description = "Run the server"
+run = "go run ."
+sources = ["go.mod", "*/**/*.go"]
+
+[tasks."format"]
+description = "Format files in the project"
+run = "dprint fmt"
+
+[tasks."check:format"]
+description = "Check formatting"
+run = "dprint check"
+
+[tasks."default"]
+hide = true
+depends = ["dev"]
+
+[settings]
+activate_aggressive = true
+experimental = true
+yes = true
