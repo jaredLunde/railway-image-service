@@ -1,16 +1,15 @@
+[env]
+CGO_CFLAGS_ALLOW = "-Xpreprocessor"
+
 [tools]
 dprint = "0.47.2"
 watchexec = "2.1.2"
 go = "1.23.1"
+"go:honnef.co/go/tools/cmd/staticcheck" = "0.6.0-0.dev"
 
 [tasks."setup"]
 description = "Setup the project"
-run = [
-  # Install dependencies
-  "mise install",
-  "go mod download",
-  "go mod tidy",
-]
+run = ["mise install", "go mod download", "go mod tidy"]
 sources = ["go.mod", ".mise.toml", "*/**/*.go"]
 outputs = ["go.sum"]
 
@@ -30,6 +29,10 @@ run = "dprint fmt"
 [tasks."check:format"]
 description = "Check formatting"
 run = "dprint check"
+
+[tasks."check:lint"]
+description = "Check linting"
+run = "staticcheck ./..."
 
 [tasks."default"]
 hide = true

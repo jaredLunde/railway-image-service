@@ -13,6 +13,7 @@ WORKDIR /go/src/app
 ARG VIPS_VERSION=8.16.0
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
 RUN DEBIAN_FRONTEND=noninteractive \
   apt-get update && \

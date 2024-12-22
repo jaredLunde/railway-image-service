@@ -10,6 +10,9 @@ See [Prerequisites](#prerequisites) for installing [mise](https://mise.jdx.dev/a
 an all-in-one tool for managing project dependencies, environment variables, and running tasks.
 
 ```sh
+# Install libvips prerequisites
+brew install vips pkg-config
+
 # Setup the project
 mise run setup
 
