@@ -16,6 +16,7 @@ import (
 	"github.com/cshum/imagor/imagorpath"
 	"github.com/cshum/imagor/loader/httploader"
 	"github.com/cshum/imagor/server"
+	"github.com/cshum/imagor/storage/filestorage"
 	"github.com/cshum/imagor/vips"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
@@ -52,6 +53,13 @@ func main() {
 	zapLog := zap.New(zc)
 	imagorService := imagor.New(
 		imagor.WithLoaders(
+			// s3storage.New(),
+			// gcloudstorage.New(),
+			filestorage.New(
+				"./data",
+				filestorage.WithPathPrefix("/file"),
+				filestorage.WithSafeChars(""),
+			),
 			httploader.New(
 				httploader.WithForwardClientHeaders(false),
 				httploader.WithAccept("*/*"),
@@ -88,6 +96,7 @@ func main() {
 		imagor.WithModifiedTimeCheck(false),
 		imagor.WithDisableErrorBody(false),
 		imagor.WithDisableParamsEndpoint(false),
+		imagor.WithResultStorages(filestorage.New("./tmp", filestorage.WithExpiration(time.Hour*24))),
 		imagor.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		imagor.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
 		imagor.WithUnsafe(cfg.Environment == EnvironmentDevelopment),

@@ -89,9 +89,6 @@ func GetRealIP(c fiber.Ctx) string {
 
 const (
 	// RealIPKey is the key used to store the real IP in the context
-	RealIPKey = "real_ip"
-)
-
-const (
-	HealthCheckEndpoint = "/healthz"
+	RealIPKey           = "real_ip"
+	HealthCheckEndpoint = "/health"
 )
