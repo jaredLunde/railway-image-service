@@ -3,6 +3,7 @@ package imagor
 import (
 	"context"
 	"crypto/sha256"
+	"os"
 	"time"
 
 	i "github.com/cshum/imagor"
@@ -21,6 +22,11 @@ type Config struct {
 }
 
 func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
+	tmpDir, err := os.MkdirTemp("", "imagor-*")
+	if err != nil {
+		return nil, err
+	}
+
 	imagorService := i.New(
 		i.WithLoaders(
 			// s3storage.New(),
@@ -62,7 +68,7 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 		i.WithModifiedTimeCheck(false),
 		i.WithDisableErrorBody(false),
 		i.WithDisableParamsEndpoint(false),
-		i.WithResultStorages(filestorage.New("./tmp", filestorage.WithExpiration(time.Hour*24))),
+		i.WithResultStorages(filestorage.New(tmpDir, filestorage.WithExpiration(time.Hour*4))),
 		i.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		i.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
 		i.WithUnsafe(cfg.Debug),

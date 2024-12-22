@@ -2,7 +2,6 @@ package imagor
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -60,7 +59,7 @@ func (s *KVStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
 	if !ok {
 		return nil, imagor.ErrInvalid
 	}
-	fmt.Println("wtf", image)
+
 	return imagor.NewBlobFromFile(image, func(stat os.FileInfo) error {
 		if s.Expiration > 0 && time.Now().Sub(stat.ModTime()) > s.Expiration {
 			return imagor.ErrExpired

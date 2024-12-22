@@ -1,7 +1,6 @@
 package keyval
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -47,9 +46,8 @@ func fromRecord(rec Record) ([]byte, error) {
 }
 
 func KeyToPath(key []byte) string {
-	mkey := md5.Sum(key)
 	hexkey := hex.EncodeToString(key)
 	// 2 byte layers deep, meaning a fanout of 256
 	// optimized for 2^24 = 16M files in the volume
-	return fmt.Sprintf("/%02x/%02x/%s", mkey[0], mkey[1], hexkey)
+	return fmt.Sprintf("/%02x/%02x/%s", hexkey[0], hexkey[1], hexkey)
 }
