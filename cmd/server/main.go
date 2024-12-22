@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,14 +14,13 @@ import (
 	"github.com/cshum/imagor"
 	"github.com/cshum/imagor/imagorpath"
 	"github.com/cshum/imagor/loader/httploader"
-	"github.com/cshum/imagor/server"
 	"github.com/cshum/imagor/storage/filestorage"
 	"github.com/cshum/imagor/vips"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/healthcheck"
 	"github.com/gofiber/fiber/v3/middleware/helmet"
-	"github.com/gofiber/fiber/v3/middleware/proxy"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
@@ -104,54 +102,30 @@ func main() {
 		imagor.WithDebug(cfg.Environment == EnvironmentDevelopment),
 	)
 
-	imagorServer := server.New(
-		imagorService,
-		server.WithAddr(net.JoinHostPort(cfg.Host, fmt.Sprint(cfg.ImagorPort))),
-		server.WithPathPrefix("/get"),
-		server.WithCORS(false),
-		server.WithStripQueryString(false),
-		server.WithAccessLog(true),
-		server.WithLogger(zapLog),
-		server.WithDebug(cfg.Environment == EnvironmentDevelopment),
-		server.WithMetrics(nil),
-	)
-
-	appCtx, cancel := context.WithTimeout(ctx, imagorServer.StartupTimeout)
+	appCtx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
-	if err := imagorServer.App.Startup(appCtx); err != nil {
+	if err := imagorService.Startup(appCtx); err != nil {
 		log.Error("imagor app failed to start", "error", err)
 		os.Exit(1)
 	}
 
-	go func() {
-		if imagorServer != nil {
-			if err := imagorServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Error("imagor server failed to start", "error", err)
-				os.Exit(1)
-			}
-		}
-	}()
-
-	objectsServer := fiber.New(fiber.Config{
+	app := fiber.New(fiber.Config{
 		StrictRouting:      true,
 		EnableIPValidation: true,
 	})
 
-	objectsServer.Use(mw.NewRealIP())
-	objectsServer.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
-	objectsServer.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
-	objectsServer.Use(favicon.New())
-	objectsServer.Use(requestid.New())
-	objectsServer.Use(mw.NewLogger(log, slog.LevelInfo))
-	objectsServer.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
-	objectsServer.Get("/get/*", func(c fiber.Ctx) error {
-		forwardTo := fmt.Sprintf("http://localhost:%d%s", cfg.ImagorPort, c.Path())
-		return proxy.DoTimeout(c, forwardTo, time.Second*30)
-	})
+	app.Use(mw.NewRealIP())
+	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
+	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
+	app.Use(favicon.New())
+	app.Use(requestid.New())
+	app.Use(mw.NewLogger(log, slog.LevelInfo))
+	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
+	app.Get("/format/*", adaptor.HTTPHandler(http.StripPrefix("/format", imagorService)))
 
 	serverLog := log.With("source", "server")
-	objectsServer.Use(mw.NewLogger(serverLog, slog.LevelInfo))
+	app.Use(mw.NewLogger(serverLog, slog.LevelInfo))
 
 	go func() {
 		addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
@@ -165,25 +139,23 @@ func main() {
 				log.Error("error shutting down objects server", "error", err)
 			},
 			OnShutdownSuccess: func() {
+				if err := imagorService.Shutdown(ctx); err != nil {
+					log.Error("imagor service did not shutdown gracefully", "error", err)
+				}
+
 				log.Info("objects server shutdown successfully")
 			},
 		}
 
 		log.Info("starting server", "address", addr, "environment", cfg.Environment)
 
-		if err := objectsServer.Listen(addr, listenConfig); err != nil {
+		if err := app.Listen(addr, listenConfig); err != nil {
 			log.Error("objects server failed to start", "error", err)
 		}
 	}()
 
 	log.Info("servers are running", cfg.Host, cfg.Port)
 	<-ctx.Done()
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), imagorServer.ShutdownTimeout)
-	if err := imagorServer.Shutdown(shutdownCtx); err != nil {
-		log.Error("imagor server did not shutdown gracefully", "error", err)
-		os.Exit(1)
-	}
 
 	log.Info("server shutdown gracefully")
 }
