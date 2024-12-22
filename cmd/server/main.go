@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
@@ -38,8 +39,9 @@ func main() {
 	})
 
 	imagorService, err := imagor.NewService(ctx, imagor.Config{
-		UploadVolume: cfg.UploadVolume,
-		Debug:        cfg.Environment == EnvironmentDevelopment,
+		MaxUploadSize: cfg.MaxUploadSize,
+		UploadVolume:  cfg.UploadVolume,
+		Debug:         cfg.Environment == EnvironmentDevelopment,
 	})
 	if err != nil {
 		log.Error("imagor app failed to start", "error", err)
@@ -47,8 +49,14 @@ func main() {
 	}
 
 	app := fiber.New(fiber.Config{
-		StrictRouting:      true,
-		EnableIPValidation: true,
+		StrictRouting:     true,
+		BodyLimit:         cfg.MaxUploadSize,
+		WriteTimeout:      cfg.RequestTimeout,
+		ReadTimeout:       cfg.RequestTimeout,
+		StreamRequestBody: true,
+		ReduceMemoryUsage: true, // memory costs money brah, i'm a poor
+		JSONEncoder:       json.Marshal,
+		JSONDecoder:       json.Unmarshal,
 	})
 
 	app.Use(mw.NewRealIP())
@@ -87,7 +95,6 @@ func main() {
 		}
 
 		log.Info("starting server", "address", addr, "environment", cfg.Environment)
-
 		if err := app.Listen(addr, listenConfig); err != nil {
 			return err
 		}

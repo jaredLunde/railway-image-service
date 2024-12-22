@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/caarlos0/env/v11"
 	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 )
@@ -12,7 +14,9 @@ type Config struct {
 	CertFile    string `env:"CERT_FILE" envDefault:""`
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
 
-	UploadVolume string `env:"UPLOAD_VOLUME" envDefault:"./data"`
+	MaxUploadSize  int           `env:"MAX_UPLOAD_SIZE" envDefault:"10485760"` // 10MB
+	UploadVolume   string        `env:"UPLOAD_VOLUME" envDefault:"./data"`
+	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" envDefault:"30s"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"development"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`

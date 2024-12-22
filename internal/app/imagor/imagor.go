@@ -13,8 +13,9 @@ import (
 )
 
 type Config struct {
-	UploadVolume string
-	Debug        bool
+	MaxUploadSize int
+	UploadVolume  string
+	Debug         bool
 }
 
 func NewService(ctx context.Context, cfg Config) (*i.Imagor, error) {
@@ -34,7 +35,7 @@ func NewService(ctx context.Context, cfg Config) (*i.Imagor, error) {
 				httploader.WithOverrideResponseHeaders(""),
 				httploader.WithAllowedSources("*"),
 				httploader.WithAllowedSourceRegexps(""),
-				httploader.WithMaxAllowedSize(20*1024*1024),
+				httploader.WithMaxAllowedSize(cfg.MaxUploadSize),
 				httploader.WithInsecureSkipVerifyTransport(false),
 				httploader.WithDefaultScheme("https"),
 				httploader.WithBaseURL(""),

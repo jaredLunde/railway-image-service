@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/goccy/go-json v0.10.4 // indirect
 	github.com/gofiber/utils/v2 v2.0.0-beta.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
