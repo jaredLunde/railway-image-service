@@ -19,6 +19,7 @@ import (
 	"github.com/jaredLunde/railway-images/internal/app/imagor"
 	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -36,8 +37,9 @@ func main() {
 		Pretty:   cfg.Environment == EnvironmentDevelopment,
 	})
 
-	imagorService, err := imagor.NewService(ctx, &imagor.Config{
-		Debug: cfg.Environment == EnvironmentDevelopment,
+	imagorService, err := imagor.NewService(ctx, imagor.Config{
+		UploadVolume: cfg.UploadVolume,
+		Debug:        cfg.Environment == EnvironmentDevelopment,
 	})
 	if err != nil {
 		log.Error("imagor app failed to start", "error", err)
@@ -54,21 +56,24 @@ func main() {
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
 	app.Use(favicon.New())
 	app.Use(requestid.New())
-	app.Use(mw.NewLogger(log, slog.LevelInfo))
 	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
+	app.Use(mw.NewLogger(log.With("source", "http"), slog.LevelInfo))
 	app.Get("/format/*", adaptor.HTTPHandler(http.StripPrefix("/format", imagorService)))
 
-	serverLog := log.With("source", "server")
-	app.Use(mw.NewLogger(serverLog, slog.LevelInfo))
-
-	go func() {
+	g := errgroup.Group{}
+	g.Go(func() error {
 		addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+		listenerNetwork := fiber.NetworkTCP4
+		if cfg.Host == "[::]" {
+			listenerNetwork = fiber.NetworkTCP6
+		}
 		listenConfig := fiber.ListenConfig{
 			GracefulContext:       ctx,
-			ListenerNetwork:       fiber.NetworkTCP,
+			ListenerNetwork:       listenerNetwork,
 			DisableStartupMessage: true,
 			CertFile:              cfg.CertFile,
 			CertKeyFile:           cfg.CertKeyFile,
+			EnablePrefork:         true,
 			OnShutdownError: func(err error) {
 				log.Error("error shutting down objects server", "error", err)
 			},
@@ -77,19 +82,24 @@ func main() {
 					log.Error("imagor service did not shutdown gracefully", "error", err)
 				}
 
-				log.Info("objects server shutdown successfully")
+				log.Info("server shutdown successfully")
 			},
 		}
 
 		log.Info("starting server", "address", addr, "environment", cfg.Environment)
 
 		if err := app.Listen(addr, listenConfig); err != nil {
-			log.Error("objects server failed to start", "error", err)
+			return err
 		}
-	}()
 
-	log.Info("servers are running", cfg.Host, cfg.Port)
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		log.Error("error starting application", "error", err)
+		os.Exit(1)
+	}
+
 	<-ctx.Done()
-
-	log.Info("server shutdown gracefully")
+	log.Info("exit 0")
 }

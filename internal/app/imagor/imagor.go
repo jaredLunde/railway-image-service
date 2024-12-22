@@ -13,27 +13,23 @@ import (
 )
 
 type Config struct {
-	Debug bool
+	UploadVolume string
+	Debug        bool
 }
 
-func NewService(ctx context.Context, cfg *Config) (*i.Imagor, error) {
-	debug := false
-	if cfg != nil {
-		debug = cfg.Debug
-	}
-
+func NewService(ctx context.Context, cfg Config) (*i.Imagor, error) {
 	imagorService := i.New(
 		i.WithLoaders(
 			// s3storage.New(),
 			// gcloudstorage.New(),
 			filestorage.New(
-				"./data",
+				cfg.UploadVolume,
 				filestorage.WithPathPrefix("/file"),
 				filestorage.WithSafeChars(""),
 			),
 			httploader.New(
 				httploader.WithForwardClientHeaders(false),
-				httploader.WithAccept("*/*"),
+				httploader.WithAccept("image/*"),
 				httploader.WithForwardHeaders(""),
 				httploader.WithOverrideResponseHeaders(""),
 				httploader.WithAllowedSources("*"),
@@ -70,8 +66,8 @@ func NewService(ctx context.Context, cfg *Config) (*i.Imagor, error) {
 		i.WithResultStorages(filestorage.New("./tmp", filestorage.WithExpiration(time.Hour*24))),
 		i.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		i.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
-		i.WithUnsafe(debug),
-		i.WithDebug(debug),
+		i.WithUnsafe(cfg.Debug),
+		i.WithDebug(cfg.Debug),
 	)
 
 	appCtx, cancel := context.WithTimeout(ctx, time.Second*10)

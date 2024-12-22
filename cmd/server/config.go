@@ -6,11 +6,13 @@ import (
 )
 
 type Config struct {
-	Host        string `env:"HOST" envDefault:"0.0.0.0"`
+	Host        string `env:"HOST" envDefault:"[::]"`
 	Port        int    `env:"PORT" envDefault:"3000"`
 	ImagorPort  int    `env:"IMAGOR_PORT" envDefault:"8000"`
 	CertFile    string `env:"CERT_FILE" envDefault:""`
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
+
+	UploadVolume string `env:"UPLOAD_VOLUME" envDefault:"./data"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"development"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`
