@@ -19,7 +19,7 @@ run = "mise watch -t serve -r"
 
 [tasks."serve"]
 description = "Run the server"
-run = "go run ."
+run = "go run ./cmd/server"
 sources = ["go.mod", "*/**/*.go"]
 
 [tasks."format"]
