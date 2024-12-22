@@ -10,24 +10,22 @@ import (
 	"github.com/cshum/imagor/loader/httploader"
 	"github.com/cshum/imagor/storage/filestorage"
 	"github.com/cshum/imagor/vips"
+	"github.com/jaredLunde/railway-images/internal/app/keyval"
 )
 
 type Config struct {
+	KeyVal        *keyval.KeyVal
+	UploadPath    string
 	MaxUploadSize int
-	UploadVolume  string
 	Debug         bool
 }
 
-func NewService(ctx context.Context, cfg Config) (*i.Imagor, error) {
+func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 	imagorService := i.New(
 		i.WithLoaders(
 			// s3storage.New(),
 			// gcloudstorage.New(),
-			filestorage.New(
-				cfg.UploadVolume,
-				filestorage.WithPathPrefix("/file"),
-				filestorage.WithSafeChars(""),
-			),
+			NewKVStorage(cfg.KeyVal, cfg.UploadPath),
 			httploader.New(
 				httploader.WithForwardClientHeaders(false),
 				httploader.WithAccept("image/*"),

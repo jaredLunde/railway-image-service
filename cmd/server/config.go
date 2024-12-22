@@ -15,8 +15,9 @@ type Config struct {
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
 
 	MaxUploadSize  int           `env:"MAX_UPLOAD_SIZE" envDefault:"10485760"` // 10MB
-	UploadVolume   string        `env:"UPLOAD_VOLUME" envDefault:"./data"`
 	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" envDefault:"30s"`
+	UploadPath     string        `env:"UPLOAD_PATH" envDefault:"./data/uploads"`
+	LevelDBPath    string        `env:"LEVELDB_PATH" envDefault:"./data/db"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"development"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`

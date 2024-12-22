@@ -18,6 +18,7 @@ import (
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
 	"github.com/jaredLunde/railway-images/internal/app/imagor"
+	"github.com/jaredLunde/railway-images/internal/app/keyval"
 	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
 	"golang.org/x/sync/errgroup"
@@ -38,9 +39,22 @@ func main() {
 		Pretty:   cfg.Environment == EnvironmentDevelopment,
 	})
 
-	imagorService, err := imagor.NewService(ctx, imagor.Config{
+	kvService, err := keyval.New(keyval.Config{
+		UploadPath:  cfg.UploadPath,
+		LevelDBPath: cfg.LevelDBPath,
+		SoftDelete:  true,
+		Logger:      log,
+	})
+	if err != nil {
+		log.Error("keyval app failed to start", "error", err)
+		os.Exit(1)
+	}
+	defer kvService.Close()
+
+	imagorService, err := imagor.New(ctx, imagor.Config{
+		KeyVal:        kvService,
+		UploadPath:    cfg.UploadPath,
 		MaxUploadSize: cfg.MaxUploadSize,
-		UploadVolume:  cfg.UploadVolume,
 		Debug:         cfg.Environment == EnvironmentDevelopment,
 	})
 	if err != nil {
@@ -67,6 +81,8 @@ func main() {
 	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
 	app.Use(mw.NewLogger(log.With("source", "http"), slog.LevelInfo))
 	app.Get("/format/*", adaptor.HTTPHandler(http.StripPrefix("/format", imagorService)))
+	app.Get("/files", kvService.ServeHTTP)
+	app.All("/files/*", kvService.ServeHTTP)
 
 	g := errgroup.Group{}
 	g.Go(func() error {
@@ -75,13 +91,13 @@ func main() {
 		if cfg.Host == "[::]" {
 			listenerNetwork = fiber.NetworkTCP6
 		}
+		// NOTE: We cannot use prefork because LevelDB uses a single file lock
 		listenConfig := fiber.ListenConfig{
 			GracefulContext:       ctx,
 			ListenerNetwork:       listenerNetwork,
 			DisableStartupMessage: true,
 			CertFile:              cfg.CertFile,
 			CertKeyFile:           cfg.CertKeyFile,
-			EnablePrefork:         true,
 			OnShutdownError: func(err error) {
 				log.Error("error shutting down objects server", "error", err)
 			},
