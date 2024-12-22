@@ -23,10 +23,8 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
-	"go.uber.org/zap"
-	"go.uber.org/zap/exp/zapslog"
-	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -38,17 +36,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	zc := zapcore.NewCore(zapcore.NewJSONEncoder(
-		zapcore.EncoderConfig{
-			TimeKey:    "time",
-			LevelKey:   "level",
-			NameKey:    "logger",
-			CallerKey:  "caller",
-			MessageKey: "msg",
-		},
-	), os.Stdout, zapcore.InfoLevel)
-	log := slog.New(zapslog.NewHandler(zc))
-	zapLog := zap.New(zc)
+
+	log := logger.New(logger.Options{
+		LogLevel: cfg.LogLevel,
+		Pretty:   cfg.Environment == EnvironmentDevelopment,
+	})
+
 	imagorService := imagor.New(
 		imagor.WithLoaders(
 			// s3storage.New(),
@@ -98,7 +91,6 @@ func main() {
 		imagor.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		imagor.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
 		imagor.WithUnsafe(cfg.Environment == EnvironmentDevelopment),
-		imagor.WithLogger(zapLog),
 		imagor.WithDebug(cfg.Environment == EnvironmentDevelopment),
 	)
 
