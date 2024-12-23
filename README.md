@@ -1,8 +1,8 @@
-# Global Image Processing Service for [Railway](https://railway.com)
+# Image Processing Service for [Railway](https://railway.com)
 
 > A self-hosted alternative to services like Cloudinary, Imgix, and others.
 
-Upload, serve, and process images globally using railway.com. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
+Upload, serve, and process images using railway.com. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
 
 ## Features
 
@@ -11,7 +11,6 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
 - [x] S3-ish key/value storage (PUT, GET, DELETE), protected by an API key
 - [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] Secure image URLs with signed paths and allowlist domains
-- [x] Use it with multi-region Railway deploys for global image processing
 
 ## TODO
 
