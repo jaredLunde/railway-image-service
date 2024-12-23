@@ -14,13 +14,6 @@ Upload, serve, and process images using railway.com. Includes on-the-fly image r
 
 ## TODO
 
-- [ ] Add config for:
-  - [ ] cache control
-  - [x] result storage ttl
-  - [x] allowed URL sources
-  - [x] automatic AVIF/WebP conversion
-- [x] Verify API keys in the key value storage
-- [x] Create signature verification w/ expiration for storage API ops
 - [ ] Create demo
 - [ ] Create `railway-images` npm package
   - [ ] `railway-images/node` client
