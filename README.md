@@ -44,7 +44,7 @@ curl -X PUT -T tmp/gopher.png http://localhost:3000/files/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/files/gopher.png \
   -H "x-api-key: $API_KEY"
-# => {"url":"http://localhost:3000/files/gopher.png?signature=...&expires=..."}
+# => http://localhost:3000/files/gopher.png?signature=...&expires=...
 
 # Upload the image
 curl -X PUT -T tmp/gopher.png "http://localhost:3000/files/gopher.png?signature=...&expires=..."
@@ -63,7 +63,7 @@ curl http://localhost:3000/files/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/files/gopher.png \
   -H "x-api-key: $API_KEY"
-# => {"url":"http://localhost:3000/files/gopher.png?signature=...&expires=..."}
+# => http://localhost:3000/files/gopher.png?signature=...&expires=...
 
 # Get the image
 curl "http://localhost:3000/files/gopher.png?signature=...&expires=..."
@@ -82,7 +82,7 @@ curl -X DELETE http://localhost:3000/files/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/files/gopher.png \
   -H "x-api-key: $API_KEY"
-# => {"url":"http://localhost:3000/files/gopher.png?signature=...&expires=..."}
+# => http://localhost:3000/files/gopher.png?signature=...&expires=...
 
 # Delete the image
 curl -X DELETE "http://localhost:3000/files/gopher.png?signature=...&expires=..."
@@ -106,7 +106,7 @@ a comprehensive list of examples.
 # Create a signed URL
 curl http://localhost:3000/sign/format/300x300/files/gopher.png \
   -H "x-api-key: $API_KEY"
-# => {"url":"http://localhost:3000/format/300x300/files/gopher.png?signature=..."}
+# => http://localhost:3000/format/300x300/files/gopher.png?signature=...
 
 # Process the image on the fly
 curl http://localhost:3000/format/300x300/files/gopher.png?signature=...
@@ -118,7 +118,7 @@ curl http://localhost:3000/format/300x300/files/gopher.png?signature=...
 # Create a signed URL
 curl http://localhost:3000/sign/format/300x300/github.com/railwayapp.png \
   -H "x-api-key: $API_KEY"
-# => {"url":"http://localhost:3000/format/300x300/google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png?signature=..."}
+# => http://localhost:3000/format/300x300/google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png?signature=...
 
 # Process the image on the fly
 curl http://localhost:3000/format/format/300x300/github.com/railwayapp.png?signature=...
