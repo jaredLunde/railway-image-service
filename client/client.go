@@ -9,8 +9,9 @@ import (
 )
 
 type Options struct {
-	URL       string
-	SecretKey string
+	URL                string
+	SecretKey          string
+	SignatureSecretKey string
 }
 
 func NewClient(opt Options) (*Client, error) {
