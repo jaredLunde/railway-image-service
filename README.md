@@ -22,9 +22,9 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
   - [ ] S3/GCS loaders
   - [ ] automatic AVIF/WebP conversion
   - [ ] base URL paths
-- [ ] Verify signed URLs in the key value storage
+- [x] Verify API keys in the key value storage
 - [ ] Create demo
 - [ ] Create `railway-images` npm package
   - [ ] `railway-images/node` client
   - [ ] `railway-images/react` hooks/components
-- [ ] Go client
+- [x] Go client

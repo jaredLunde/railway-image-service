@@ -75,7 +75,11 @@ func (c *Client) Sign(path string) (string, error) {
 
 func (c *Client) Get(key string) (io.ReadCloser, error) {
 	u := *c.URL
-	u.Path = key
+	path, err := url.JoinPath("/files", key)
+	if err != nil {
+		return nil, err
+	}
+	u.Path = path
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
@@ -90,20 +94,35 @@ func (c *Client) Get(key string) (io.ReadCloser, error) {
 }
 
 func (c *Client) Put(key string, r io.Reader) error {
+	// Create URL
 	u := *c.URL
-	u.Path = key
+	u.Path = fmt.Sprintf("/files/%s", key)
+
+	// Create request
 	req, err := http.NewRequest(http.MethodPut, u.String(), r)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Set content type if possible
+	if rc, ok := r.(io.ReadCloser); ok {
+		defer rc.Close()
+	}
+
+	// Send request
 	res, err := c.transport.RoundTrip(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to send request: %w", err)
 	}
+	defer res.Body.Close()
 
+	// Read error response body if status is not 201
 	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("unexpected status code: %d", res.StatusCode)
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("unexpected status code %d and failed to read error body: %w", res.StatusCode, err)
+		}
+		return fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(body))
 	}
 
 	return nil
@@ -111,7 +130,11 @@ func (c *Client) Put(key string, r io.Reader) error {
 
 func (c *Client) Delete(key string) error {
 	u := *c.URL
-	u.Path = key
+	path, err := url.JoinPath("/files", key)
+	if err != nil {
+		return err
+	}
+	u.Path = path
 	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return err

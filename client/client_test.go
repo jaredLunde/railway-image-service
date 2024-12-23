@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -120,8 +121,8 @@ func TestClient_Get(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET request, got %s", r.Method)
 		}
-		if r.URL.Path != "/test.jpg" {
-			t.Errorf("expected path /test.jpg, got %s", r.URL.Path)
+		if r.URL.Path != "/files/test.jpg" {
+			t.Errorf("expected path /files/test.jpg, got %s", r.URL.Path)
 		}
 		w.Write(expectedContent)
 	}))
@@ -150,34 +151,157 @@ func TestClient_Get(t *testing.T) {
 }
 
 func TestClient_Put(t *testing.T) {
-	content := []byte("test content")
+	tests := []struct {
+		name          string
+		key           string
+		content       []byte
+		serverHandler func(w http.ResponseWriter, r *http.Request)
+		wantErr       bool
+		errorContains string
+	}{
+		{
+			name:    "successful upload",
+			key:     "test.jpg",
+			content: []byte("test content"),
+			wantErr: false,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				if !bytes.Equal(body, []byte("test content")) {
+					t.Errorf("expected body %q, got %q", "test content", string(body))
+				}
+				w.WriteHeader(http.StatusCreated)
+			},
+		},
+		{
+			name:          "server error with message",
+			key:           "test.jpg",
+			content:       []byte("test content"),
+			wantErr:       true,
+			errorContains: "unexpected status code 500: internal server error",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("internal server error"))
+			},
+		},
+		{
+			name:          "server error no message",
+			key:           "test.jpg",
+			content:       []byte("test content"),
+			wantErr:       true,
+			errorContains: "unexpected status code 500",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+		},
+		{
+			name:    "empty content",
+			key:     "empty.txt",
+			content: []byte{},
+			wantErr: false,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					t.Errorf("failed to read request body: %v", err)
+				}
+				if len(body) != 0 {
+					t.Errorf("expected empty body, got %q", string(body))
+				}
+				w.WriteHeader(http.StatusCreated)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test server
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Check HTTP method
+				if r.Method != http.MethodPut {
+					t.Errorf("expected PUT request, got %s", r.Method)
+				}
+
+				// Handle the request using test case handler
+				tt.serverHandler(w, r)
+			}))
+			defer server.Close()
+
+			// Create client
+			serverURL, err := url.Parse(server.URL)
+			if err != nil {
+				t.Fatalf("failed to parse server URL: %v", err)
+			}
+
+			client := &Client{
+				URL:       serverURL,
+				transport: http.DefaultTransport,
+			}
+
+			// Execute Put method
+			err = client.Put(tt.key, bytes.NewReader(tt.content))
+
+			// Check error
+			if tt.wantErr {
+				if err == nil {
+					t.Error("expected error, got nil")
+					return
+				}
+				if tt.errorContains != "" && !strings.Contains(err.Error(), tt.errorContains) {
+					t.Errorf("error %q does not contain %q", err.Error(), tt.errorContains)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// Helper function to test ReadCloser is properly closed
+type testReadCloser struct {
+	*bytes.Reader
+	closed bool
+}
+
+func newTestReadCloser(data []byte) *testReadCloser {
+	return &testReadCloser{
+		Reader: bytes.NewReader(data),
+		closed: false,
+	}
+}
+
+func (t *testReadCloser) Close() error {
+	t.closed = true
+	return nil
+}
+
+func TestClient_Put_ReaderClose(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			t.Errorf("expected PUT request, got %s", r.Method)
-		}
-		if r.URL.Path != "/test.jpg" {
-			t.Errorf("expected path /test.jpg, got %s", r.URL.Path)
-		}
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(body, content) {
-			t.Errorf("expected body %s, got %s", content, body)
-		}
 		w.WriteHeader(http.StatusCreated)
 	}))
 	defer server.Close()
 
-	serverURL, _ := url.Parse(server.URL)
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatalf("failed to parse server URL: %v", err)
+	}
+
 	client := &Client{
 		URL:       serverURL,
 		transport: http.DefaultTransport,
 	}
 
-	err := client.Put("/test.jpg", bytes.NewReader(content))
+	reader := newTestReadCloser([]byte("test content"))
+	err = client.Put("test.txt", reader)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	if !reader.closed {
+		t.Error("reader was not closed")
 	}
 }
 
@@ -186,8 +310,8 @@ func TestClient_Delete(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE request, got %s", r.Method)
 		}
-		if r.URL.Path != "/test.jpg" {
-			t.Errorf("expected path /test.jpg, got %s", r.URL.Path)
+		if r.URL.Path != "/files/test.jpg" {
+			t.Errorf("expected path /files/test.jpg, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}))
