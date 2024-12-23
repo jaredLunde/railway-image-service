@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+// Get a signature for a given key and secret
 func Sign(key, secret string) string {
 	key = strings.TrimPrefix(key, "/")
 	h := hmac.New(sha256.New, []byte(secret))
@@ -17,6 +18,7 @@ func Sign(key, secret string) string {
 	return base64.URLEncoding.EncodeToString(h.Sum(nil))
 }
 
+// Add a signature to a URL with using the secret key
 func SignURL(url *url.URL, secret string) (*string, error) {
 	nextURI := *url
 	path := nextURI.Path
