@@ -408,7 +408,6 @@ func TestClient_Delete(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
 func TestClient_List(t *testing.T) {
 	expectedResult := &ListResult{
 		Keys:     []string{"test1.jpg", "test2.jpg"},
@@ -425,13 +424,10 @@ func TestClient_List(t *testing.T) {
 		}
 
 		q := r.URL.Query()
-		if prefix := q.Get("prefix"); prefix != "test" {
-			t.Errorf("expected prefix=test, got %s", prefix)
-		}
 		if limit := q.Get("limit"); limit != "10" {
 			t.Errorf("expected limit=10, got %s", limit)
 		}
-		if start := q.Get("start"); start != "start" {
+		if start := q.Get("starting_at"); start != "start" {
 			t.Errorf("expected start=start, got %s", start)
 		}
 		if unlinked := q.Get("unlinked"); unlinked != "true" {
@@ -449,7 +445,11 @@ func TestClient_List(t *testing.T) {
 		transport: http.DefaultTransport,
 	}
 
-	result, err := client.List("test", 10, "start", true)
+	result, err := client.List(ListOptions{
+		Limit:      10,
+		StartingAt: "start",
+		Unlinked:   true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
