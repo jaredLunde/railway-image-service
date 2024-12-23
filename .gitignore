@@ -27,3 +27,8 @@ go.work.sum
 # tmp files
 /tmp
 /data
+
+# Node/TypeScript
+node_modules/
+dist/
+.typescript/
