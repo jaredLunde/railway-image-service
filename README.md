@@ -20,7 +20,6 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
   - [ ] result storage expiration
   - [ ] allowed URL sources
   - [ ] automatic AVIF/WebP conversion
-  - [ ] base URL paths
 - [x] Verify API keys in the key value storage
 - [x] Create signature verification w/ expiration for storage API ops
 - [ ] Create demo
@@ -28,6 +27,46 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
   - [ ] `railway-images/node` client
   - [ ] `railway-images/react` hooks/components
 - [x] Go client
+
+## API
+
+### Key-value API
+
+| Method   | Path               | Description                                        |
+| -------- | ------------------ | -------------------------------------------------- |
+| `PUT`    | `/files/:key`      | Upload a file                                      |
+| `GET`    | `/files/:key`      | Get a file                                         |
+| `DELETE` | `/files/:key`      | Delete a file                                      |
+| `GET`    | `/files`           | List files with `limit`, `starting_at` parameters. |
+| `GET`    | `/sign/files/:key` | Create a signed URL for a key value operation      |
+
+### Image processing API
+
+| Method | Path                              | Description                                           |
+| ------ | --------------------------------- | ----------------------------------------------------- |
+| `GET`  | `/format/:operations/:image`      | Process an image on the fly                           |
+| `GET`  | `/sign/format/:operations/:image` | Create a signed URL for an image processing operation |
+
+---
+
+## Configuration
+
+| Environment Variable | Description | Default |
+| `MAX_UPLOAD_SIZE` | The maximum size of an uploaded file in bytes | `10485760` (10MB) |
+| `UPLOAD_PATH` | The path to store uploaded files | `/data/uploads` |
+| `LEVELDB_PATH` | The path to store the key/value store | `/data/db` |
+| `SECRET_KEY` | The secret key used to for accessing the key/value API | `password` |
+| `SIGNATURE_KEY` | The secret key used to sign URLs | ``|
+|`ENVIRONMENT`| The environment the server is running in. Either`production`or`development`. | `production` |
+
+### Server configuration
+
+| Environment Variable | Description | Default |
+| `HOST` | The host the server listens on | `[::]` |
+| `PORT` | The port the server listens on | `3000` |
+| `REQUEST_TIMEOUT` | The timeout for requests formatted as a Go duration | `30s` |
+
+---
 
 ## Key value API examples
 
@@ -87,6 +126,8 @@ curl http://localhost:3000/sign/files/gopher.png \
 # Delete the image
 curl -X DELETE "http://localhost:3000/files/gopher.png?signature=...&expires=..."
 ```
+
+---
 
 ## Image processing API examples
 

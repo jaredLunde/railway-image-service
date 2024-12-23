@@ -27,7 +27,7 @@ func (k *KeyVal) QueryHandler(key []byte, c fiber.Ctx) {
 	m := c.Queries()
 	// operation is first query parameter (e.g. ?limit=10)
 	_, unlinkedOpOk := m["unlinked"]
-	start := m["start"]
+	start := m["starting_at"]
 	limit := 0
 	qlimit := m["limit"]
 	if qlimit != "" {
@@ -69,10 +69,10 @@ func (k *KeyVal) QueryHandler(key []byte, c fiber.Ctx) {
 	c.Request().URI().CopyTo(nextURI)
 	nextPage := ""
 	if next != "" {
-		nextURI.QueryArgs().Set("start", next)
+		nextURI.QueryArgs().Set("starting_at", next)
 		nextPage = nextURI.String()
 	} else {
-		nextURI.QueryArgs().Del("start")
+		nextURI.QueryArgs().Del("starting_at")
 	}
 	c.Status(fiber.StatusOK)
 	c.Set("Content-Type", "application/json")

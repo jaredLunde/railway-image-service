@@ -26,7 +26,7 @@ func NewVerifyAccess(secretKey, signSecret string) func(c fiber.Ctx) error {
 		hasValidAPIKey := subtle.ConstantTimeCompare([]byte(apiKey), []byte(secretKey)) == 1
 		signature := c.Query("x-signature")
 		expireAt := c.Query("x-expire")
-		hasValidSignature := false
+		hasValidSignature := signSecret == ""
 		if signature != "" && expireAt != "" {
 			expireAtMillis, err := strconv.ParseInt(expireAt, 10, 64)
 			if err != nil {

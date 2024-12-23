@@ -47,7 +47,7 @@ func main() {
 		UploadPath:  cfg.UploadPath,
 		LevelDBPath: cfg.LevelDBPath,
 		SoftDelete:  true,
-		SignSecret:  cfg.SignSecret,
+		SignSecret:  cfg.SignatureKey,
 		Logger:      log,
 		Debug:       debug,
 	})
@@ -61,7 +61,7 @@ func main() {
 		KeyVal:        kvService,
 		UploadPath:    cfg.UploadPath,
 		MaxUploadSize: cfg.MaxUploadSize,
-		SignSecret:    cfg.SignSecret,
+		SignSecret:    cfg.SignatureKey,
 		Debug:         debug,
 	})
 	if err != nil {
@@ -69,7 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	signatureService := signature.New(cfg.SignSecret)
+	signatureService := signature.New(cfg.SignatureKey)
 
 	app := fiber.New(fiber.Config{
 		StrictRouting:     true,
@@ -92,7 +92,7 @@ func main() {
 	}
 
 	verifyAPIKey := mw.NewVerifyAPIKey(cfg.SecretKey)
-	verifyAccess := mw.NewVerifyAccess(cfg.SecretKey, cfg.SignSecret)
+	verifyAccess := mw.NewVerifyAccess(cfg.SecretKey, cfg.SignatureKey)
 	app.Use(mw.NewRealIP())
 	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))

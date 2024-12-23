@@ -12,19 +12,19 @@ type Config struct {
 	Port        int    `env:"PORT" envDefault:"3000"`
 	CertFile    string `env:"CERT_FILE" envDefault:""`
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
+	// The maximum duration for reading the entire request, including the body
+	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" envDefault:"30s"`
 
 	// The maximum size of a request body in bytes
 	MaxUploadSize int `env:"MAX_UPLOAD_SIZE" envDefault:"10485760"` // 10MB
 	// The path to the directory where uploaded files are stored
-	UploadPath string `env:"UPLOAD_PATH" envDefault:"./data/uploads"`
+	UploadPath string `env:"UPLOAD_PATH" envDefault:"/data/uploads"`
 	// The path to the LevelDB database
-	LevelDBPath string `env:"LEVELDB_PATH" envDefault:"./data/db"`
-	// The maximum duration for reading the entire request, including the body
-	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" envDefault:"30s"`
+	LevelDBPath string `env:"LEVELDB_PATH" envDefault:"/data/db"`
 	// Used for securing the key value storage API
 	SecretKey string `env:"SECRET_KEY" envDefault:"password"`
 	// Used for signing URLs
-	SignSecret string `env:"SIGN_SECRET" envDefault:"secret"`
+	SignatureKey string `env:"SIGNATURE_KEY" envDefault:""`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"production"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`

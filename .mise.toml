@@ -1,6 +1,8 @@
 [env]
 CGO_CFLAGS_ALLOW = "-Xpreprocessor"
 ENVIRONMENT = "development"
+UPLOAD_PATH = "./data/uploads"
+LEVELDB_PATH = "./data/db"
 
 [tools]
 dprint = "0.47.2"
