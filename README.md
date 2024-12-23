@@ -4,6 +4,8 @@
 
 Upload, serve, and process images using railway.com. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/MF8Rcp?referralCode=5hTSOZ)
+
 ## Features
 
 - [x] On-the-fly image processing (resize, crop, etc.) from any allowlisted domain or Railway volume
