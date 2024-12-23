@@ -32,8 +32,6 @@ func SignURL(url *url.URL, secret string) (*string, error) {
 	query := nextURI.Query()
 	if strings.HasPrefix(p, "/files") {
 		expireAt := time.Now().Add(time.Hour).UnixMilli()
-		query := nextURI.Query()
-		query.Set("x-signature", signature)
 		query.Set("x-expire", fmt.Sprintf("%d", expireAt))
 		nextURI.RawQuery = query.Encode()
 		signature = Sign(fmt.Sprintf("%s:%d", p, expireAt), secret)
