@@ -13,7 +13,13 @@ node = "22"
 
 [tasks."setup"]
 description = "Setup the project"
-run = ["mise install", "go mod download", "go mod tidy", "cd js && npm install"]
+run = [
+  "mise install",
+  "go mod download",
+  "go mod tidy",
+  "cd js && npm install",
+  "mise format",
+]
 sources = ["go.mod", ".mise.toml", "*/**/*.go"]
 outputs = ["go.sum"]
 
