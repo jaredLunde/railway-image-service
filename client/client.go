@@ -11,11 +11,16 @@ import (
 )
 
 type Options struct {
-	URL                string
-	SecretKey          string
+	// The URL of your service
+	URL string
+	// Your service API key
+	SecretKey string
+	// If a signature secret key is provided, it will be used to sign URLs
+	// locally instead of making a request to the server to sign the request.
 	SignatureSecretKey string
 }
 
+// Create a new API client.
 func NewClient(opt Options) (*Client, error) {
 	if opt.URL == "" {
 		return nil, fmt.Errorf("URL is required")
@@ -55,6 +60,9 @@ type Client struct {
 	transport          http.RoundTripper
 }
 
+// Get a signed URL for a given path. If a signature secret key is provided
+// in the client options, the URL will be signed locally. Otherwise, a request
+// will be made to the server to sign the URL.
 func (c *Client) Sign(path string) (string, error) {
 	u := *c.URL
 
@@ -89,6 +97,7 @@ func (c *Client) Sign(path string) (string, error) {
 	return string(body), nil
 }
 
+// Get a file from the storage server
 func (c *Client) Get(key string) (io.ReadCloser, error) {
 	u := *c.URL
 	path, err := url.JoinPath("/files", key)
@@ -109,6 +118,7 @@ func (c *Client) Get(key string) (io.ReadCloser, error) {
 	return res.Body, nil
 }
 
+// Put a file to the storage server
 func (c *Client) Put(key string, r io.Reader) error {
 	// Create URL
 	u := *c.URL
@@ -144,6 +154,7 @@ func (c *Client) Put(key string, r io.Reader) error {
 	return nil
 }
 
+// Delete a file from the storage server
 func (c *Client) Delete(key string) error {
 	u := *c.URL
 	path, err := url.JoinPath("/files", key)
@@ -174,40 +185,55 @@ type ListResult struct {
 	HasMore  bool     `json:"has_more"`
 }
 
-func (c *Client) List(prefix string, limit int, start string, unlinked bool) (*ListResult, error) {
+type ListOptions struct {
+	// The maximum number of keys to return
+	Limit int
+	// The key to start listing from
+	StartingAt string
+	// If true, list unlinked (soft deleted) files
+	Unlinked bool
+}
+
+// List files in the storage server
+func (c *Client) List(opts ListOptions) (*ListResult, error) {
 	u := *c.URL
 	u.Path = "/files"
+
+	// Build query parameters
 	q := u.Query()
-	q.Set("prefix", prefix)
-	if limit > 0 {
-		q.Set("limit", fmt.Sprintf("%d", limit))
+	if opts.Limit > 0 {
+		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
 	}
-	if start != "" {
-		q.Set("start", start)
+	if opts.StartingAt != "" {
+		q.Set("starting_at", opts.StartingAt)
 	}
-	if unlinked {
+	if opts.Unlinked {
 		q.Set("unlinked", "true")
 	}
 	u.RawQuery = q.Encode()
 
+	// Create and send request
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	res, err := c.transport.RoundTrip(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-
 	defer res.Body.Close()
+
+	// Handle non-200 responses
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("unexpected status code %d: %s", res.StatusCode, string(body))
 	}
 
+	// Parse response
 	var result ListResult
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	return &result, nil
