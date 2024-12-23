@@ -18,6 +18,7 @@ type Config struct {
 	KeyVal        *keyval.KeyVal
 	UploadPath    string
 	MaxUploadSize int
+	SignSecret    string
 	Debug         bool
 }
 
@@ -27,31 +28,38 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 		return nil, err
 	}
 
-	imagorService := i.New(
-		i.WithLoaders(
-			// s3storage.New(),
-			// gcloudstorage.New(),
-			NewKVStorage(cfg.KeyVal, cfg.UploadPath),
-			httploader.New(
-				httploader.WithForwardClientHeaders(false),
-				httploader.WithAccept("image/*"),
-				httploader.WithForwardHeaders(""),
-				httploader.WithOverrideResponseHeaders(""),
-				httploader.WithAllowedSources("*"),
-				httploader.WithAllowedSourceRegexps(""),
-				httploader.WithMaxAllowedSize(cfg.MaxUploadSize),
-				httploader.WithInsecureSkipVerifyTransport(false),
-				httploader.WithDefaultScheme("https"),
-				httploader.WithBaseURL(""),
-				httploader.WithProxyTransport("", ""),
-				httploader.WithBlockLoopbackNetworks(false),
-				httploader.WithBlockPrivateNetworks(false),
-				httploader.WithBlockLinkLocalNetworks(false),
-				httploader.WithBlockNetworks(),
-			),
+	loaders := []i.Loader{
+		NewKVStorage(cfg.KeyVal, cfg.UploadPath),
+		httploader.New(
+			httploader.WithForwardClientHeaders(false),
+			httploader.WithAccept("image/*"),
+			httploader.WithForwardHeaders(""),
+			httploader.WithOverrideResponseHeaders(""),
+			httploader.WithAllowedSources("*"),
+			httploader.WithAllowedSourceRegexps(""),
+			httploader.WithMaxAllowedSize(cfg.MaxUploadSize),
+			httploader.WithInsecureSkipVerifyTransport(false),
+			httploader.WithDefaultScheme("https"),
+			httploader.WithBaseURL(""),
+			httploader.WithProxyTransport("", ""),
+			httploader.WithBlockLoopbackNetworks(false),
+			httploader.WithBlockPrivateNetworks(false),
+			httploader.WithBlockLinkLocalNetworks(false),
+			httploader.WithBlockNetworks(),
 		),
+	}
+
+	// if false {
+	// 	loaders = append(loaders, s3storage.New())
+	// }
+	// if false {
+	// 	loaders = append(loaders, gcloudstorage.New())
+	// }
+
+	imagorService := i.New(
+		i.WithLoaders(loaders...),
 		i.WithProcessors(vips.NewProcessor()),
-		i.WithSigner(imagorpath.NewHMACSigner(sha256.New, 0, "")),
+		i.WithSigner(imagorpath.NewHMACSigner(sha256.New, 0, cfg.SignSecret)),
 		i.WithBasePathRedirect(""),
 		i.WithBaseParams(""),
 		i.WithRequestTimeout(time.Second*30),
@@ -67,8 +75,8 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 		i.WithAutoAVIF(true),
 		i.WithModifiedTimeCheck(false),
 		i.WithDisableErrorBody(false),
-		i.WithDisableParamsEndpoint(false),
-		i.WithResultStorages(filestorage.New(tmpDir, filestorage.WithExpiration(time.Hour*4))),
+		i.WithDisableParamsEndpoint(true),
+		i.WithResultStorages(filestorage.New(tmpDir, filestorage.WithExpiration(time.Hour*24))),
 		i.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		i.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
 		i.WithUnsafe(cfg.Debug),

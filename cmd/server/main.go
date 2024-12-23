@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/goccy/go-json"
@@ -17,10 +18,12 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/jaredLunde/railway-images/client/sign"
 	"github.com/jaredLunde/railway-images/internal/app/imagor"
 	"github.com/jaredLunde/railway-images/internal/app/keyval"
 	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
+	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -34,16 +37,20 @@ func main() {
 		panic(err)
 	}
 
+	debug := cfg.Environment == EnvironmentDevelopment
 	log := logger.New(logger.Options{
 		LogLevel: cfg.LogLevel,
-		Pretty:   cfg.Environment == EnvironmentDevelopment,
+		Pretty:   debug,
 	})
 
 	kvService, err := keyval.New(keyval.Config{
+		BasePath:    "/files",
 		UploadPath:  cfg.UploadPath,
 		LevelDBPath: cfg.LevelDBPath,
 		SoftDelete:  true,
+		SignSecret:  cfg.SignSecret,
 		Logger:      log,
+		Debug:       debug,
 	})
 	if err != nil {
 		log.Error("keyval app failed to start", "error", err)
@@ -55,7 +62,8 @@ func main() {
 		KeyVal:        kvService,
 		UploadPath:    cfg.UploadPath,
 		MaxUploadSize: cfg.MaxUploadSize,
-		Debug:         cfg.Environment == EnvironmentDevelopment,
+		SignSecret:    cfg.SignSecret,
+		Debug:         debug,
 	})
 	if err != nil {
 		log.Error("imagor app failed to start", "error", err)
@@ -69,10 +77,13 @@ func main() {
 		ReadTimeout:       cfg.RequestTimeout,
 		StreamRequestBody: true,
 		ReduceMemoryUsage: true, // memory costs money brah, i'm a poor
-		JSONEncoder:       json.Marshal,
-		JSONDecoder:       json.Unmarshal,
+		JSONEncoder: func(v interface{}) ([]byte, error) {
+			return json.MarshalWithOption(v, json.DisableHTMLEscape())
+		},
+		JSONDecoder: json.Unmarshal,
 	})
 
+	verifyAPIKey := mw.NewVerifyAPIKey(cfg.SecretKey)
 	app.Use(mw.NewRealIP())
 	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
@@ -80,9 +91,37 @@ func main() {
 	app.Use(requestid.New())
 	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
 	app.Use(mw.NewLogger(log.With("source", "http"), slog.LevelInfo))
-	app.Get("/format/*", adaptor.HTTPHandler(http.StripPrefix("/format", imagorService)))
-	app.Get("/files", kvService.ServeHTTP)
-	app.All("/files/*", kvService.ServeHTTP)
+	app.Get("/format/*", adaptor.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		sig := q.Get("x-signature")
+		if sig == "" {
+			sig = r.Header.Get("x-signature")
+		}
+		if sig == "" {
+			sig = "unsafe"
+		}
+		r.URL.Path = fmt.Sprintf("/%s%s", sig, strings.TrimPrefix(r.URL.Path, "/format"))
+		q.Del("x-signature")
+		r.URL.RawQuery = q.Encode()
+		imagorService.ServeHTTP(w, r)
+	})))
+	app.Get("/files", kvService.ServeHTTP, verifyAPIKey)
+	app.Get("/files/*", kvService.ServeHTTP, verifyAPIKey)
+	app.Put("/files/*", kvService.ServeHTTP, verifyAPIKey)
+	app.Delete("/files/*", kvService.ServeHTTP, verifyAPIKey)
+	app.Get("/sign/*", func(c fiber.Ctx) error {
+		nextURI := fasthttp.AcquireURI()
+		c.Request().URI().CopyTo(nextURI)
+		path := string(nextURI.Path())
+		p := strings.TrimPrefix(path, "/sign")
+		sigP := p
+		if strings.HasPrefix(p, "/format") {
+			sigP = strings.TrimPrefix(p, "/format")
+		}
+		nextURI.SetPath(p)
+		nextURI.QueryArgs().Set("x-signature", sign.Sign(sigP, cfg.SignSecret))
+		return c.Send(nextURI.FullURI())
+	}, verifyAPIKey)
 
 	g := errgroup.Group{}
 	g.Go(func() error {

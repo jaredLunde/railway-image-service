@@ -1,5 +1,6 @@
 [env]
 CGO_CFLAGS_ALLOW = "-Xpreprocessor"
+ENVIRONMENT = "development"
 
 [tools]
 dprint = "0.47.2"
@@ -33,6 +34,10 @@ run = "dprint check"
 [tasks."check:lint"]
 description = "Check linting"
 run = "staticcheck ./..."
+
+[tasks."test:unit"]
+description = "Run unit tests"
+run = "go test ./... -short"
 
 [tasks."default"]
 hide = true

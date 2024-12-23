@@ -18,3 +18,4 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - uses: jdx/mise-action@v2
       - run: mise run "check:*"
+      - run: mise run "test:*"

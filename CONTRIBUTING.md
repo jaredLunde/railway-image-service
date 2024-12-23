@@ -1,24 +1,6 @@
-
 # Contributing
 
 ## Local development
-
-### Quick start
-
-See [Prerequisites](#prerequisites) for installing [mise](https://mise.jdx.dev/about.html) –
-an all-in-one tool for managing project dependencies, environment variables, and running tasks.
-
-```sh
-# Install libvips prerequisites
-brew install vips pkg-config
-
-# Setup the project
-mise run setup
-
-# Start the development server
-# By default: https://localhost:3000
-mise run
-```
 
 ### Prerequisites
 
@@ -47,3 +29,20 @@ fish_add_path ~/.local/share/
 ```
 
 3. Run `mise trust` to trust the project's `.mise.toml` file.
+
+### Quick start
+
+See [Prerequisites](#prerequisites) for installing [mise](https://mise.jdx.dev/about.html) –
+an all-in-one tool for managing project dependencies, environment variables, and running tasks.
+
+```sh
+# Install libvips prerequisites
+brew install vips pkg-config
+
+# Setup the project
+mise run setup
+
+# Start the development server
+# By default: https://localhost:3000
+mise run
+```
