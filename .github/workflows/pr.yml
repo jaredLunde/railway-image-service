@@ -22,6 +22,6 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           sudo apt-get update -qq -o Acquire::Retries=3
-          sudo apt-get install --fix-missing -qq -o Acquire::Retries=3 libvips
+          sudo apt-get install --fix-missing -qq -o Acquire::Retries=3 libvips-dev
       - run: mise run "check:*"
       - run: mise run "test:*"
