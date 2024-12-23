@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
@@ -83,7 +84,15 @@ func main() {
 		JSONDecoder: json.Unmarshal,
 	})
 
+	if cfg.Environment == EnvironmentDevelopment {
+		log.Warn("running in development mode, signed URLs are not required")
+	}
+	if cfg.SecretKey == "" {
+		log.Warn("no secret key provided, API key verification is disabled")
+	}
+
 	verifyAPIKey := mw.NewVerifyAPIKey(cfg.SecretKey)
+	verifyAccess := mw.NewVerifyAccess(cfg.SecretKey, cfg.SignSecret)
 	app.Use(mw.NewRealIP())
 	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
@@ -105,21 +114,27 @@ func main() {
 		r.URL.RawQuery = q.Encode()
 		imagorService.ServeHTTP(w, r)
 	})))
-	app.Get("/files", kvService.ServeHTTP, verifyAPIKey)
-	app.Get("/files/*", kvService.ServeHTTP, verifyAPIKey)
-	app.Put("/files/*", kvService.ServeHTTP, verifyAPIKey)
-	app.Delete("/files/*", kvService.ServeHTTP, verifyAPIKey)
+	app.Get("/files", kvService.ServeHTTP, verifyAccess)
+	app.Get("/files/*", kvService.ServeHTTP, verifyAccess)
+	app.Put("/files/*", kvService.ServeHTTP, verifyAccess)
+	app.Delete("/files/*", kvService.ServeHTTP, verifyAccess)
 	app.Get("/sign/*", func(c fiber.Ctx) error {
 		nextURI := fasthttp.AcquireURI()
 		c.Request().URI().CopyTo(nextURI)
 		path := string(nextURI.Path())
 		p := strings.TrimPrefix(path, "/sign")
-		sigP := p
+		var signature string
 		if strings.HasPrefix(p, "/format") {
-			sigP = strings.TrimPrefix(p, "/format")
+			signature = sign.Sign(strings.TrimPrefix(p, "/format"), cfg.SignSecret)
+		}
+		if strings.HasPrefix(p, "/files") {
+			expireAt := time.Now().Add(time.Hour).UnixMilli()
+			nextURI.QueryArgs().Set("x-expire", fmt.Sprintf("%d", expireAt))
+			signature = sign.Sign(fmt.Sprintf("%s:%d", p, expireAt), cfg.SignSecret)
+
 		}
 		nextURI.SetPath(p)
-		nextURI.QueryArgs().Set("x-signature", sign.Sign(sigP, cfg.SignSecret))
+		nextURI.QueryArgs().Set("x-signature", signature)
 		return c.Send(nextURI.FullURI())
 	}, verifyAPIKey)
 

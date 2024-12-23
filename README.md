@@ -8,7 +8,7 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
 
 - [x] On-the-fly image processing (resize, crop, etc.) from any domain, S3 bucket, Google Cloud Storage, or Railway volume
 - [x] Automatic AVIF/WebP conversion
-- [x] S3-ish image storage (PUT, GET, DELETE)
+- [x] S3-ish key/value storage (PUT, GET, DELETE), protected by an API key
 - [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] Secure image URLs with signed paths and allowlist domains
 - [x] Use it with multi-region Railway deploys for global image processing
@@ -23,6 +23,7 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
   - [ ] automatic AVIF/WebP conversion
   - [ ] base URL paths
 - [x] Verify API keys in the key value storage
+- [x] Create signature verification w/ expiration for storage API ops
 - [ ] Create demo
 - [ ] Create `railway-images` npm package
   - [ ] `railway-images/node` client

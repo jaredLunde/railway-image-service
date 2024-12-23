@@ -24,7 +24,7 @@ type Config struct {
 	// Used for signing URLs
 	SignSecret string `env:"SIGN_SECRET" envDefault:"secret"`
 	// Used for securing the key value storage API
-	SecretKey string `env:"SECRET_KEY" envDefault:""`
+	SecretKey string `env:"SECRET_KEY" envDefault:"password"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"production"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`
