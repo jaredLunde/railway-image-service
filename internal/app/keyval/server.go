@@ -81,7 +81,6 @@ func (k *KeyVal) QueryHandler(key []byte, c fiber.Ctx) {
 		HasMore:  next != "",
 		Keys:     keys,
 	})
-	return
 }
 
 func (k *KeyVal) Delete(key []byte, unlink bool) int {

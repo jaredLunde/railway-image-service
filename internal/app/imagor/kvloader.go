@@ -15,7 +15,7 @@ import (
 	"github.com/jaredLunde/railway-images/internal/app/keyval"
 )
 
-var dotFileRegex = regexp.MustCompile("/\\.")
+var dotFileRegex = regexp.MustCompile(`/.`)
 
 // KVStorage File Storage implements imagor.Storage interface
 type KVStorage struct {
@@ -61,7 +61,7 @@ func (s *KVStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
 	}
 
 	return imagor.NewBlobFromFile(image, func(stat os.FileInfo) error {
-		if s.Expiration > 0 && time.Now().Sub(stat.ModTime()) > s.Expiration {
+		if s.Expiration > 0 && time.Since(stat.ModTime()) > s.Expiration {
 			return imagor.ErrExpired
 		}
 		return nil
