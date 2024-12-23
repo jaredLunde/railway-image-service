@@ -1,4 +1,4 @@
-# Image Processing Service for [Railway](https://railway.com)
+# Image Processing Service for Railway
 
 > A self-hosted alternative to services like Cloudinary, Imgix, and others.
 
