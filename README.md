@@ -55,6 +55,7 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 ## Configuration
 
 | Environment Variable | Description | Default |
+| --- | --- | --- |
 | `MAX_UPLOAD_SIZE` | The maximum size of an uploaded file in bytes | `10485760` (10MB) |
 | `UPLOAD_PATH` | The path to store uploaded files | `/data/uploads` |
 | `LEVELDB_PATH` | The path to store the key/value store | `/data/db` |
@@ -65,6 +66,7 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 ### Server configuration
 
 | Environment Variable | Description | Default |
+| --- | --- | --- |
 | `HOST` | The host the server listens on | `[::]` |
 | `PORT` | The port the server listens on | `3000` |
 | `REQUEST_TIMEOUT` | The timeout for requests formatted as a Go duration | `30s` |
