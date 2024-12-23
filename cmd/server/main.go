@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
@@ -19,12 +18,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
-	"github.com/jaredLunde/railway-images/client/sign"
 	"github.com/jaredLunde/railway-images/internal/app/imagor"
 	"github.com/jaredLunde/railway-images/internal/app/keyval"
+	"github.com/jaredLunde/railway-images/internal/app/signature"
 	"github.com/jaredLunde/railway-images/internal/pkg/logger"
 	"github.com/jaredLunde/railway-images/internal/pkg/mw"
-	"github.com/valyala/fasthttp"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -70,6 +68,8 @@ func main() {
 		log.Error("imagor app failed to start", "error", err)
 		os.Exit(1)
 	}
+
+	signatureService := signature.New(cfg.SignSecret)
 
 	app := fiber.New(fiber.Config{
 		StrictRouting:     true,
@@ -118,25 +118,7 @@ func main() {
 	app.Get("/files/*", kvService.ServeHTTP, verifyAccess)
 	app.Put("/files/*", kvService.ServeHTTP, verifyAccess)
 	app.Delete("/files/*", kvService.ServeHTTP, verifyAccess)
-	app.Get("/sign/*", func(c fiber.Ctx) error {
-		nextURI := fasthttp.AcquireURI()
-		c.Request().URI().CopyTo(nextURI)
-		path := string(nextURI.Path())
-		p := strings.TrimPrefix(path, "/sign")
-		var signature string
-		if strings.HasPrefix(p, "/format") {
-			signature = sign.Sign(strings.TrimPrefix(p, "/format"), cfg.SignSecret)
-		}
-		if strings.HasPrefix(p, "/files") {
-			expireAt := time.Now().Add(time.Hour).UnixMilli()
-			nextURI.QueryArgs().Set("x-expire", fmt.Sprintf("%d", expireAt))
-			signature = sign.Sign(fmt.Sprintf("%s:%d", p, expireAt), cfg.SignSecret)
-
-		}
-		nextURI.SetPath(p)
-		nextURI.QueryArgs().Set("x-signature", signature)
-		return c.Send(nextURI.FullURI())
-	}, verifyAPIKey)
+	app.Get("/sign/*", signatureService.ServeHTTP, verifyAPIKey)
 
 	g := errgroup.Group{}
 	g.Go(func() error {
