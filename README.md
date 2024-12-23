@@ -2,7 +2,7 @@
 
 > A self-hosted alternative to services like Cloudinary, Imgix, and others.
 
-Upload, serve, and process images using railway.com. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
+Upload, serve, and process images on Railway. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/MF8Rcp?referralCode=5hTSOZ)
 
