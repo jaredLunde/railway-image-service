@@ -105,7 +105,11 @@ func main() {
 	verifyAPIKey := mw.NewVerifyAPIKey(cfg.SecretKey)
 	verifyAccess := mw.NewVerifyAccess(cfg.SecretKey, cfg.SignatureSecretKey)
 	app.Use(mw.NewRealIP())
-	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
+	app.Use(helmet.New(helmet.Config{
+		HSTSPreloadEnabled:        true,
+		HSTSMaxAge:                31536000,
+		CrossOriginResourcePolicy: "cross-origin",
+	}))
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
 	app.Use(favicon.New())
 	app.Use(requestid.New())
