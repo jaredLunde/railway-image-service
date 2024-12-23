@@ -15,11 +15,17 @@ import (
 )
 
 type Config struct {
-	KeyVal        *keyval.KeyVal
-	UploadPath    string
-	MaxUploadSize int
-	SignSecret    string
-	Debug         bool
+	KeyVal             *keyval.KeyVal
+	UploadPath         string
+	MaxUploadSize      int
+	SignSecret         string
+	AllowedHTTPSources string
+	AutoWebP           bool
+	AutoAVIF           bool
+	ResultCacheTTL     time.Duration
+	Concurrency        int
+	RequestTimeout     time.Duration
+	Debug              bool
 }
 
 func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
@@ -30,12 +36,15 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 
 	loaders := []i.Loader{
 		NewKVStorage(cfg.KeyVal, cfg.UploadPath),
-		httploader.New(
+	}
+
+	if cfg.AllowedHTTPSources != "" {
+		loaders = append(loaders, httploader.New(
 			httploader.WithForwardClientHeaders(false),
 			httploader.WithAccept("image/*"),
 			httploader.WithForwardHeaders(""),
 			httploader.WithOverrideResponseHeaders(""),
-			httploader.WithAllowedSources("*"),
+			httploader.WithAllowedSources(cfg.AllowedHTTPSources),
 			httploader.WithAllowedSourceRegexps(""),
 			httploader.WithMaxAllowedSize(cfg.MaxUploadSize),
 			httploader.WithInsecureSkipVerifyTransport(false),
@@ -46,7 +55,7 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 			httploader.WithBlockPrivateNetworks(false),
 			httploader.WithBlockLinkLocalNetworks(false),
 			httploader.WithBlockNetworks(),
-		),
+		))
 	}
 
 	// if false {
@@ -62,21 +71,21 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 		i.WithSigner(imagorpath.NewHMACSigner(sha256.New, 0, cfg.SignSecret)),
 		i.WithBasePathRedirect(""),
 		i.WithBaseParams(""),
-		i.WithRequestTimeout(time.Second*30),
-		i.WithLoadTimeout(time.Second*30),
-		i.WithSaveTimeout(time.Second*30),
-		i.WithProcessTimeout(time.Second*30),
-		i.WithProcessConcurrency(20),
+		i.WithRequestTimeout(cfg.RequestTimeout),
+		i.WithLoadTimeout(cfg.RequestTimeout),
+		i.WithSaveTimeout(cfg.RequestTimeout),
+		i.WithProcessTimeout(cfg.RequestTimeout),
+		i.WithProcessConcurrency(int64(cfg.Concurrency)),
 		i.WithProcessQueueSize(100),
 		i.WithCacheHeaderTTL(time.Hour*24*7),
 		i.WithCacheHeaderSWR(time.Hour*24),
 		i.WithCacheHeaderNoCache(false),
-		i.WithAutoWebP(true),
-		i.WithAutoAVIF(true),
+		i.WithAutoWebP(cfg.AutoWebP),
+		i.WithAutoAVIF(cfg.AutoAVIF),
 		i.WithModifiedTimeCheck(false),
 		i.WithDisableErrorBody(false),
 		i.WithDisableParamsEndpoint(true),
-		i.WithResultStorages(filestorage.New(tmpDir, filestorage.WithExpiration(time.Hour*24))),
+		i.WithResultStorages(filestorage.New(tmpDir, filestorage.WithExpiration(cfg.ResultCacheTTL))),
 		i.WithStoragePathStyle(imagorpath.DigestStorageHasher),
 		i.WithResultStoragePathStyle(imagorpath.DigestResultStorageHasher),
 		i.WithUnsafe(cfg.Debug),

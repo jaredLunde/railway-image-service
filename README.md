@@ -18,8 +18,8 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
 - [ ] Add config for:
   - [ ] cache control
   - [ ] result storage expiration
-  - [ ] allowed URL sources
-  - [ ] automatic AVIF/WebP conversion
+  - [x] allowed URL sources
+  - [x] automatic AVIF/WebP conversion
 - [x] Verify API keys in the key value storage
 - [x] Create signature verification w/ expiration for storage API ops
 - [ ] Create demo
@@ -45,31 +45,37 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 
 ### Image processing API
 
-| Method | Path                              | Description                                           |
-| ------ | --------------------------------- | ----------------------------------------------------- |
-| `GET`  | `/format/:operations/:image`      | Process an image on the fly                           |
-| `GET`  | `/sign/format/:operations/:image` | Create a signed URL for an image processing operation |
+| Method | Path                              | Description                                                        |
+| ------ | --------------------------------- | ------------------------------------------------------------------ |
+| `GET`  | `/serve/:operations?/:image`      | Process an image on the fly                                        |
+| `GET`  | `/serve/meta/:operations?/:image` | Get the metadata of an image, e.g. dimensions, format, orientation |
+| `GET`  | `/sign/serve/:operations?/:image` | Create a signed URL for an image processing operation              |
 
 ---
 
 ## Configuration
 
-| Environment Variable | Description | Default |
-| --- | --- | --- |
-| `MAX_UPLOAD_SIZE` | The maximum size of an uploaded file in bytes | `10485760` (10MB) |
-| `UPLOAD_PATH` | The path to store uploaded files | `/data/uploads` |
-| `LEVELDB_PATH` | The path to store the key/value store | `/data/db` |
-| `SECRET_KEY` | The secret key used to for accessing the key/value API | `password` |
-| `SIGNATURE_KEY` | The secret key used to sign URLs | ``|
-|`ENVIRONMENT`| The environment the server is running in. Either`production`or`development`. | `production` |
+| Environment Variable           | Description                                                                                                                                                                         | Default           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `MAX_UPLOAD_SIZE`              | The maximum size of an uploaded file in bytes                                                                                                                                       | `10485760` (10MB) |
+| `UPLOAD_PATH`                  | The path to store uploaded files                                                                                                                                                    | `/data/uploads`   |
+| `LEVELDB_PATH`                 | The path to store the key/value store                                                                                                                                               | `/data/db`        |
+| `SECRET_KEY`                   | The secret key used to for accessing the key/value API                                                                                                                              | `password`        |
+| `SIGNATURE_KEY`                | The secret key used to sign URLs                                                                                                                                                    |                   |
+| `PROCESS_ALLOWED_HTTP_SOURCES` | A comma-separated list of allowed URL sources for image processing, e.g. `*.foobar.com,my.foobar.com,mybucket.s3.amazonaws.com`. Set to an empty string to disable the HTTP loader. | `*`               |
+| `PROCESS_AUTO_WEBP`            | Automatically convert images to WebP if compatible with the requester unless another format is specified.                                                                           | `true`            |
+| `PROCESS_AUTO_AVIF`            | Automatically convert images to AVIF if compatible with the requester unless another format is specified.                                                                           | `true`            |
+| `PROCESS_CONCURRENCY`          | The max number of images to process concurrently.                                                                                                                                   | `20`              |
+| `PROCESS_CACHE_TTL`            | The TTL for the image processor result cache as a Go duration.                                                                                                                      | `24h`             |
+| `ENVIRONMENT`                  | The environment the server is running in. Either`production`or`development`.                                                                                                        | `production`      |
 
 ### Server configuration
 
-| Environment Variable | Description | Default |
-| --- | --- | --- |
-| `HOST` | The host the server listens on | `[::]` |
-| `PORT` | The port the server listens on | `3000` |
-| `REQUEST_TIMEOUT` | The timeout for requests formatted as a Go duration | `30s` |
+| Environment Variable | Description                                         | Default |
+| -------------------- | --------------------------------------------------- | ------- |
+| `HOST`               | The host the server listens on                      | `[::]`  |
+| `PORT`               | The port the server listens on                      | `3000`  |
+| `REQUEST_TIMEOUT`    | The timeout for requests formatted as a Go duration | `30s`   |
 
 ---
 
@@ -150,22 +156,22 @@ a comprehensive list of examples.
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/format/300x300/files/gopher.png \
+curl http://localhost:3000/sign/serve/300x300/files/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/format/300x300/files/gopher.png?signature=...
+# => http://localhost:3000/serve/300x300/files/gopher.png?signature=...
 
 # Process the image on the fly
-curl http://localhost:3000/format/300x300/files/gopher.png?signature=...
+curl http://localhost:3000/serve/300x300/files/gopher.png?signature=...
 ```
 
 ### Crop and resize an image from a URL
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/format/300x300/github.com/railwayapp.png \
+curl http://localhost:3000/sign/serve/300x300/github.com/railwayapp.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/format/300x300/google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png?signature=...
+# => http://localhost:3000/serve/300x300/google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png?signature=...
 
 # Process the image on the fly
-curl http://localhost:3000/format/format/300x300/github.com/railwayapp.png?signature=...
+curl http://localhost:3000/serve/300x300/github.com/railwayapp.png?signature=...
 ```

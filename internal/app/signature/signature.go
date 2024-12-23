@@ -24,11 +24,11 @@ func (s *Signature) ServeHTTP(c fiber.Ctx) error {
 	path := string(nextURI.Path())
 	p := strings.TrimPrefix(path, "/sign")
 	var signature string
-	if !strings.HasPrefix(p, "/files") && !strings.HasPrefix(p, "/format") {
+	if !strings.HasPrefix(p, "/files") && !strings.HasPrefix(p, "/serve") {
 		return c.Status(fiber.StatusBadRequest).SendString("invalid request")
 	}
-	if strings.HasPrefix(p, "/format") {
-		signature = sign.Sign(strings.TrimPrefix(p, "/format"), s.secret)
+	if strings.HasPrefix(p, "/serve") {
+		signature = sign.Sign(strings.TrimPrefix(p, "/serve"), s.secret)
 	}
 	if strings.HasPrefix(p, "/files") {
 		expireAt := time.Now().Add(time.Hour).UnixMilli()

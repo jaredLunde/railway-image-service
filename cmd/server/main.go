@@ -58,11 +58,17 @@ func main() {
 	defer kvService.Close()
 
 	imagorService, err := imagor.New(ctx, imagor.Config{
-		KeyVal:        kvService,
-		UploadPath:    cfg.UploadPath,
-		MaxUploadSize: cfg.MaxUploadSize,
-		SignSecret:    cfg.SignatureKey,
-		Debug:         debug,
+		KeyVal:             kvService,
+		UploadPath:         cfg.UploadPath,
+		MaxUploadSize:      cfg.MaxUploadSize,
+		SignSecret:         cfg.SignatureKey,
+		AllowedHTTPSources: cfg.AllowedHTTPSources,
+		AutoWebP:           cfg.AutoWebP,
+		AutoAVIF:           cfg.AutoAVIF,
+		ResultCacheTTL:     cfg.ProcessCacheTTL,
+		Concurrency:        cfg.Concurrency,
+		RequestTimeout:     cfg.RequestTimeout,
+		Debug:              debug,
 	})
 	if err != nil {
 		log.Error("imagor app failed to start", "error", err)
@@ -100,7 +106,7 @@ func main() {
 	app.Use(requestid.New())
 	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
 	app.Use(mw.NewLogger(log.With("source", "http"), slog.LevelInfo))
-	app.Get("/format/*", adaptor.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	app.Get("/serve/*", adaptor.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		sig := q.Get("x-signature")
 		if sig == "" {
@@ -109,7 +115,7 @@ func main() {
 		if sig == "" {
 			sig = "unsafe"
 		}
-		r.URL.Path = fmt.Sprintf("/%s%s", sig, strings.TrimPrefix(r.URL.Path, "/format"))
+		r.URL.Path = fmt.Sprintf("/%s%s", sig, strings.TrimPrefix(r.URL.Path, "/serve"))
 		q.Del("x-signature")
 		r.URL.RawQuery = q.Encode()
 		imagorService.ServeHTTP(w, r)
