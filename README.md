@@ -14,14 +14,6 @@ Upload, serve, and process images on Railway. Includes on-the-fly image resizing
 - [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] Secure image URLs with signed paths and allowlist domains
 
-## TODO
-
-- [ ] Create demo
-- [ ] Create `railway-images` npm package
-  - [ ] `railway-images/node` client
-  - [ ] `railway-images/react` hooks/components
-- [x] Go client
-
 ## API
 
 ### Key-value API
