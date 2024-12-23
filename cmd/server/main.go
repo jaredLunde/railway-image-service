@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
+	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/gofiber/fiber/v3/middleware/favicon"
 	"github.com/gofiber/fiber/v3/middleware/healthcheck"
 	"github.com/gofiber/fiber/v3/middleware/helmet"
@@ -62,11 +65,13 @@ func main() {
 		UploadPath:         cfg.UploadPath,
 		MaxUploadSize:      cfg.MaxUploadSize,
 		SignSecret:         cfg.SignatureKey,
-		AllowedHTTPSources: cfg.AllowedHTTPSources,
-		AutoWebP:           cfg.AutoWebP,
-		AutoAVIF:           cfg.AutoAVIF,
-		ResultCacheTTL:     cfg.ProcessCacheTTL,
-		Concurrency:        cfg.Concurrency,
+		AllowedHTTPSources: cfg.ServeAllowedHTTPSources,
+		AutoWebP:           cfg.ServeAutoWebP,
+		AutoAVIF:           cfg.ServeAutoAVIF,
+		ResultCacheTTL:     cfg.ServeCacheTTL,
+		Concurrency:        cfg.ServeConcurrency,
+		CacheControlTTL:    cfg.ServeCacheControlTTL,
+		CacheControlSWR:    cfg.ServeCacheControlSWR,
 		RequestTimeout:     cfg.RequestTimeout,
 		Debug:              debug,
 	})
@@ -104,6 +109,16 @@ func main() {
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
 	app.Use(favicon.New())
 	app.Use(requestid.New())
+	corsAllowedOrigins := strings.Split(cfg.CORSAllowedOrigins, ",")
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:        corsAllowedOrigins,
+		AllowMethods:        []string{fiber.MethodGet, fiber.MethodHead, fiber.MethodPost, fiber.MethodPut, fiber.MethodPatch, fiber.MethodDelete, fiber.MethodOptions},
+		AllowHeaders:        []string{"Origin", "Content-Type", "Accept", "Cache-Control", "If-Match", "If-None-Match", "x-api-key", "x-signature", "x-expire"},
+		ExposeHeaders:       []string{"Content-Disposition", "X-Request-ID", "Content-Md5", "Content-Range", "Accept-Ranges", "ETag"},
+		AllowPrivateNetwork: true,
+		MaxAge:              int(time.Hour),
+		AllowCredentials:    !slices.Contains(corsAllowedOrigins, "*"),
+	}))
 	app.Get(mw.HealthCheckEndpoint, healthcheck.NewHealthChecker())
 	app.Use(mw.NewLogger(log.With("source", "http"), slog.LevelInfo))
 	app.Get("/serve/*", adaptor.HTTPHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Date: Mon, 23 Dec 2024 17:55:56 GMT
+Content-Type: text/plain; charset=utf-8
+Content-Length: 120
+X-Xss-Protection: 0
+X-Content-Type-Options: nosniff
+X-Frame-Options: SAMEORIGIN
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Referrer-Policy: no-referrer
+X-Dns-Prefetch-Control: off
+X-Download-Options: noopen
+X-Permitted-Cross-Domain-Policies: none
+X-Request-Id: 098343c1-53a7-4146-9079-4a51a05a10ce
+Vary: Origin
+

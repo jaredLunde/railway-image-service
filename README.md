@@ -66,15 +66,19 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 | `SERVE_AUTO_AVIF`            | Automatically convert images to AVIF if compatible with the requester unless another format is specified.                                                                           | `true`            |
 | `SERVE_CONCURRENCY`          | The max number of images to process concurrently.                                                                                                                                   | `20`              |
 | `SERVE_RESULT_CACHE_TTL`     | The TTL for the image processor result cache as a Go duration.                                                                                                                      | `24h`             |
+| `SERVE_CACHE_CONTROL_TTL`    | The TTL for the cache-control header as a Go duration.                                                                                                                              | `8760h` (1 year)  |
+| `SERVE_CACHE_CONTROL_SWR`    | The stale-while-revalidate value for the cache-control header as a Go duration.                                                                                                     | `24h` (1 day)     |
 | `ENVIRONMENT`                | The environment the server is running in. Either`production`or`development`.                                                                                                        | `production`      |
 
 ### Server configuration
 
-| Environment Variable | Description                                         | Default |
-| -------------------- | --------------------------------------------------- | ------- |
-| `HOST`               | The host the server listens on                      | `[::]`  |
-| `PORT`               | The port the server listens on                      | `3000`  |
-| `REQUEST_TIMEOUT`    | The timeout for requests formatted as a Go duration | `30s`   |
+| Environment Variable   | Description                                                                                 | Default |
+| ---------------------- | ------------------------------------------------------------------------------------------- | ------- |
+| `HOST`                 | The host the server listens on                                                              | `[::]`  |
+| `PORT`                 | The port the server listens on                                                              | `3000`  |
+| `REQUEST_TIMEOUT`      | The timeout for requests formatted as a Go duration                                         | `30s`   |
+| `CORS_ALLOWED_ORIGINS` | A comma-separated list of allowed origins for CORS requests, e.g. `https://your-domain.com` | `*`     |
+| `LOG_LEVEL`            | The log level for the server: `debug`, `info`, `warn`, and `error`.                         | `info`  |
 
 ---
 

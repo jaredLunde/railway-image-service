@@ -25,6 +25,8 @@ type Config struct {
 	ResultCacheTTL     time.Duration
 	Concurrency        int
 	RequestTimeout     time.Duration
+	CacheControlTTL    time.Duration
+	CacheControlSWR    time.Duration
 	Debug              bool
 }
 
@@ -77,8 +79,8 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 		i.WithProcessTimeout(cfg.RequestTimeout),
 		i.WithProcessConcurrency(int64(cfg.Concurrency)),
 		i.WithProcessQueueSize(100),
-		i.WithCacheHeaderTTL(time.Hour*24*7),
-		i.WithCacheHeaderSWR(time.Hour*24),
+		i.WithCacheHeaderTTL(cfg.CacheControlTTL),
+		i.WithCacheHeaderSWR(cfg.CacheControlSWR),
 		i.WithCacheHeaderNoCache(false),
 		i.WithAutoWebP(cfg.AutoWebP),
 		i.WithAutoAVIF(cfg.AutoAVIF),

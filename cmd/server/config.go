@@ -14,6 +14,8 @@ type Config struct {
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
 	// The maximum duration for reading the entire request, including the body
 	RequestTimeout time.Duration `env:"REQUEST_TIMEOUT" envDefault:"30s"`
+	// Allowed origins for CORS
+	CORSAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS" envDefault:"*"`
 
 	// The maximum size of a request body in bytes
 	MaxUploadSize int `env:"MAX_UPLOAD_SIZE" envDefault:"10485760"` // 10MB
@@ -27,15 +29,19 @@ type Config struct {
 	SignatureKey string `env:"SIGNATURE_KEY" envDefault:""`
 
 	// A comma-separated list of allowed URL sources
-	AllowedHTTPSources string `env:"SERVE_ALLOWED_HTTP_SOURCES" envDefault:"*"`
+	ServeAllowedHTTPSources string `env:"SERVE_ALLOWED_HTTP_SOURCES" envDefault:"*"`
 	// Automatically convert images to WebP
-	AutoWebP bool `env:"SERVE_AUTO_WEBP" envDefault:"true"`
+	ServeAutoWebP bool `env:"SERVE_AUTO_WEBP" envDefault:"true"`
 	// Automatically convert images to AVIF
-	AutoAVIF bool `env:"SERVE_AUTO_AVIF" envDefault:"true"`
+	ServeAutoAVIF bool `env:"SERVE_AUTO_AVIF" envDefault:"true"`
 	// The max number of images to process concurrently
-	Concurrency int `env:"SERVE_CONCURRENCY" envDefault:"20"`
+	ServeConcurrency int `env:"SERVE_CONCURRENCY" envDefault:"20"`
 	// The duration to cache processed images
-	ProcessCacheTTL time.Duration `env:"SERVE_RESULT_CACHE_TTL" envDefault:"24h"`
+	ServeCacheTTL time.Duration `env:"SERVE_RESULT_CACHE_TTL" envDefault:"24h"`
+	// The TTL for the Cache-Control header
+	ServeCacheControlTTL time.Duration `env:"SERVE_CACHE_CONTROL_TTL" envDefault:"8760h"`
+	// The SWR time for the Cache-Control header
+	ServeCacheControlSWR time.Duration `env:"SERVE_CACHE_CONTROL_SWR" envDefault:"24h"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"production"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`

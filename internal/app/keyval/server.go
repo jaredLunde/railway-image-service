@@ -161,13 +161,13 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 	m := c.Queries()
 
 	// List query
-	if string(c.Path()) == k.basePath && c.Method() == "GET" {
+	if string(c.Path()) == k.basePath && c.Method() == fiber.MethodGet {
 		k.QueryHandler(key, c)
 		return nil
 	}
 
 	// Lock the key while a PUT or DELETE is in progress
-	if method == "POST" || method == "PUT" || method == "DELETE" {
+	if method == fiber.MethodPost || method == fiber.MethodPut || method == fiber.MethodDelete {
 		if !k.LockKey(key) {
 			// Retry later
 			c.Status(fiber.StatusConflict)
@@ -177,7 +177,7 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 	}
 
 	switch method {
-	case "GET", "HEAD":
+	case fiber.MethodGet, fiber.MethodHead:
 		rec := k.GetRecord(key)
 		var fp string
 		if len(rec.Hash) != 0 {
@@ -203,7 +203,7 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 			c.SendFile(fp)
 		}
 
-	case "PUT":
+	case fiber.MethodPut:
 		// no empty values
 		if c.Request().Header.ContentLength() == 0 {
 			c.Status(411)
@@ -213,7 +213,7 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 		status := k.Write(key, c.Request().BodyStream(), int64(c.Request().Header.ContentLength()))
 		c.Status(status)
 
-	case "DELETE":
+	case fiber.MethodDelete:
 		_, unlink := m["unlink"]
 		status := k.Delete(key, unlink)
 		c.Status(status)
