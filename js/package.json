@@ -48,7 +48,6 @@
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.0.2",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0",
 		"tsup": "^8.3.5",
 		"typescript": "^5.7.2",
 		"vitest": "^2.1.8"
