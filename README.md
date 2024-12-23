@@ -32,6 +32,9 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
 
 ### Key-value API
 
+To access the key-value API, you must provide an `x-api-key` header with the value of the `SECRET_KEY` environment variable.
+Alternatively, you can use a signed URL to access the key-value API. The `/sign/` endpoint always requires the `x-api-key` header.
+
 | Method   | Path               | Description                                        |
 | -------- | ------------------ | -------------------------------------------------- |
 | `PUT`    | `/files/:key`      | Upload a file                                      |
