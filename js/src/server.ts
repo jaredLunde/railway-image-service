@@ -10,7 +10,7 @@ export type ClientOptions = {
 	signatureSecretKey?: string;
 };
 
-export class Client {
+export class RailwayImagesClient {
 	private baseURL: URL;
 	private secretKey: string;
 	private signatureSecretKey?: string;
