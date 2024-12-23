@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/jaredLunde/railway-images/client/sign"
 )
 
 type Options struct {
@@ -30,7 +32,9 @@ func NewClient(opt Options) (*Client, error) {
 	}
 
 	return &Client{
-		URL: u,
+		URL:                u,
+		SignatureSecretKey: opt.SignatureSecretKey,
+		transport:          transport,
 	}, nil
 }
 
@@ -46,12 +50,23 @@ func (t *SigningTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 }
 
 type Client struct {
-	URL       *url.URL
-	transport http.RoundTripper
+	URL                *url.URL
+	SignatureSecretKey string
+	transport          http.RoundTripper
 }
 
 func (c *Client) Sign(path string) (string, error) {
 	u := *c.URL
+
+	if c.SignatureSecretKey != "" {
+		u.Path = path
+		uri, err := sign.SignURL(&u, c.SignatureSecretKey)
+		if err != nil {
+			return "", err
+		}
+		return *uri, nil
+	}
+
 	signPath, err := url.JoinPath("/sign", path)
 	if err != nil {
 		return "", err

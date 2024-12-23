@@ -1,13 +1,10 @@
 package signature
 
 import (
-	"fmt"
-	"strings"
-	"time"
+	"net/url"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/jaredLunde/railway-images/client/sign"
-	"github.com/valyala/fasthttp"
 )
 
 func New(secret string) *Signature {
@@ -19,24 +16,14 @@ type Signature struct {
 }
 
 func (s *Signature) ServeHTTP(c fiber.Ctx) error {
-	nextURI := fasthttp.AcquireURI()
-	c.Request().URI().CopyTo(nextURI)
-	path := string(nextURI.Path())
-	p := strings.TrimPrefix(path, "/sign")
-	var signature string
-	if !strings.HasPrefix(p, "/files") && !strings.HasPrefix(p, "/serve") {
+	u, err := url.Parse(string(c.Request().URI().FullURI()))
+	if err != nil {
 		return c.Status(fiber.StatusBadRequest).SendString("invalid request")
 	}
-	if strings.HasPrefix(p, "/serve") {
-		signature = sign.Sign(strings.TrimPrefix(p, "/serve"), s.secret)
-	}
-	if strings.HasPrefix(p, "/files") {
-		expireAt := time.Now().Add(time.Hour).UnixMilli()
-		nextURI.QueryArgs().Set("x-expire", fmt.Sprintf("%d", expireAt))
-		signature = sign.Sign(fmt.Sprintf("%s:%d", p, expireAt), s.secret)
 
+	uri, err := sign.SignURL(u, s.secret)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).SendString("invalid request")
 	}
-	nextURI.SetPath(p)
-	nextURI.QueryArgs().Set("x-signature", signature)
-	return c.Send(nextURI.FullURI())
+	return c.SendString(*uri)
 }
