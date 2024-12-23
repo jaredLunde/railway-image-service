@@ -27,15 +27,15 @@ type Config struct {
 	SignatureKey string `env:"SIGNATURE_KEY" envDefault:""`
 
 	// A comma-separated list of allowed URL sources
-	AllowedHTTPSources string `env:"PROCESS_ALLOWED_HTTP_SOURCES" envDefault:"*"`
+	AllowedHTTPSources string `env:"SERVE_ALLOWED_HTTP_SOURCES" envDefault:"*"`
 	// Automatically convert images to WebP
-	AutoWebP bool `env:"PROCESS_AUTO_WEBP" envDefault:"true"`
+	AutoWebP bool `env:"SERVE_AUTO_WEBP" envDefault:"true"`
 	// Automatically convert images to AVIF
-	AutoAVIF bool `env:"PROCESS_AUTO_AVIF" envDefault:"true"`
+	AutoAVIF bool `env:"SERVE_AUTO_AVIF" envDefault:"true"`
 	// The max number of images to process concurrently
-	Concurrency int `env:"PROCESS_CONCURRENCY" envDefault:"20"`
+	Concurrency int `env:"SERVE_CONCURRENCY" envDefault:"20"`
 	// The duration to cache processed images
-	ProcessCacheTTL time.Duration `env:"PROCESS_CACHE_TTL" envDefault:"24h"`
+	ProcessCacheTTL time.Duration `env:"SERVE_RESULT_CACHE_TTL" envDefault:"24h"`
 
 	Environment Environment     `env:"ENVIRONMENT" envDefault:"production"`
 	LogLevel    logger.LogLevel `env:"LOG_LEVEL" envDefault:"info"`

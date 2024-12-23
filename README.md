@@ -17,7 +17,7 @@ Upload, serve, and process images globally using railway.com. Includes on-the-fl
 
 - [ ] Add config for:
   - [ ] cache control
-  - [ ] result storage expiration
+  - [x] result storage ttl
   - [x] allowed URL sources
   - [x] automatic AVIF/WebP conversion
 - [x] Verify API keys in the key value storage
@@ -55,19 +55,19 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 
 ## Configuration
 
-| Environment Variable           | Description                                                                                                                                                                         | Default           |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
-| `MAX_UPLOAD_SIZE`              | The maximum size of an uploaded file in bytes                                                                                                                                       | `10485760` (10MB) |
-| `UPLOAD_PATH`                  | The path to store uploaded files                                                                                                                                                    | `/data/uploads`   |
-| `LEVELDB_PATH`                 | The path to store the key/value store                                                                                                                                               | `/data/db`        |
-| `SECRET_KEY`                   | The secret key used to for accessing the key/value API                                                                                                                              | `password`        |
-| `SIGNATURE_KEY`                | The secret key used to sign URLs                                                                                                                                                    |                   |
-| `PROCESS_ALLOWED_HTTP_SOURCES` | A comma-separated list of allowed URL sources for image processing, e.g. `*.foobar.com,my.foobar.com,mybucket.s3.amazonaws.com`. Set to an empty string to disable the HTTP loader. | `*`               |
-| `PROCESS_AUTO_WEBP`            | Automatically convert images to WebP if compatible with the requester unless another format is specified.                                                                           | `true`            |
-| `PROCESS_AUTO_AVIF`            | Automatically convert images to AVIF if compatible with the requester unless another format is specified.                                                                           | `true`            |
-| `PROCESS_CONCURRENCY`          | The max number of images to process concurrently.                                                                                                                                   | `20`              |
-| `PROCESS_CACHE_TTL`            | The TTL for the image processor result cache as a Go duration.                                                                                                                      | `24h`             |
-| `ENVIRONMENT`                  | The environment the server is running in. Either`production`or`development`.                                                                                                        | `production`      |
+| Environment Variable         | Description                                                                                                                                                                         | Default           |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `MAX_UPLOAD_SIZE`            | The maximum size of an uploaded file in bytes                                                                                                                                       | `10485760` (10MB) |
+| `UPLOAD_PATH`                | The path to store uploaded files                                                                                                                                                    | `/data/uploads`   |
+| `LEVELDB_PATH`               | The path to store the key/value store                                                                                                                                               | `/data/db`        |
+| `SECRET_KEY`                 | The secret key used to for accessing the key/value API                                                                                                                              | `password`        |
+| `SIGNATURE_KEY`              | The secret key used to sign URLs                                                                                                                                                    |                   |
+| `SERVE_ALLOWED_HTTP_SOURCES` | A comma-separated list of allowed URL sources for image processing, e.g. `*.foobar.com,my.foobar.com,mybucket.s3.amazonaws.com`. Set to an empty string to disable the HTTP loader. | `*`               |
+| `SERVE_AUTO_WEBP`            | Automatically convert images to WebP if compatible with the requester unless another format is specified.                                                                           | `true`            |
+| `SERVE_AUTO_AVIF`            | Automatically convert images to AVIF if compatible with the requester unless another format is specified.                                                                           | `true`            |
+| `SERVE_CONCURRENCY`          | The max number of images to process concurrently.                                                                                                                                   | `20`              |
+| `SERVE_RESULT_CACHE_TTL`     | The TTL for the image processor result cache as a Go duration.                                                                                                                      | `24h`             |
+| `ENVIRONMENT`                | The environment the server is running in. Either`production`or`development`.                                                                                                        | `production`      |
 
 ### Server configuration
 
