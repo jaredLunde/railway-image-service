@@ -46,13 +46,15 @@ func main() {
 	})
 
 	kvService, err := keyval.New(keyval.Config{
-		BasePath:    "/files",
-		UploadPath:  cfg.UploadPath,
-		LevelDBPath: cfg.LevelDBPath,
-		SoftDelete:  true,
-		SignSecret:  cfg.SignatureSecretKey,
-		Logger:      log,
-		Debug:       debug,
+		BasePath:         "/files",
+		UploadPath:       cfg.UploadPath,
+		LevelDBPath:      cfg.LevelDBPath,
+		SoftDelete:       true,
+		SignSecret:       cfg.SignatureSecretKey,
+		MaxSize:          cfg.MaxUploadSize,
+		AllowedMimeTypes: []string{"image/"},
+		Logger:           log,
+		Debug:            debug,
 	})
 	if err != nil {
 		log.Error("keyval app failed to start", "error", err)

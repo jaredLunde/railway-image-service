@@ -54,22 +54,26 @@ export class RailwayImagesClient {
 		return response.text();
 	}
 
-	async get(key: string): Promise<ReadableStream<Uint8Array> | null> {
+	async get(key: string): Promise<Response> {
 		const response = await this.fetch(`/files/${key}`);
-		return response.body;
+		if (response.status !== 200) {
+			throw new Error(`${response.status}: ${response.statusText}`);
+		}
+		return response;
 	}
 
-	async put(key: string, content: ReadableStream | Buffer): Promise<void> {
-		await this.fetch(`/files/${key}`, {
+	async put(
+		key: string,
+		content: ReadableStream | Buffer | ArrayBuffer,
+	): Promise<Response> {
+		return this.fetch(`/files/${key}`, {
 			method: "PUT",
 			body: content,
 		});
 	}
 
-	async delete(key: string): Promise<void> {
-		await this.fetch(`/files/${key}`, {
-			method: "DELETE",
-		});
+	async delete(key: string): Promise<Response> {
+		return this.fetch(`/files/${key}`, { method: "DELETE" });
 	}
 
 	async list(options: ListOptions = {}): Promise<ListResult> {

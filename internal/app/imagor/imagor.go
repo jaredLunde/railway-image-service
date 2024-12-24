@@ -11,9 +11,9 @@ import (
 
 	i "github.com/cshum/imagor"
 	"github.com/cshum/imagor/imagorpath"
-	"github.com/cshum/imagor/loader/httploader"
 	"github.com/cshum/imagor/storage/filestorage"
 	"github.com/cshum/imagor/vips"
+	"github.com/jaredLunde/railway-images/internal/app/imagor/httploader"
 	"github.com/jaredLunde/railway-images/internal/app/keyval"
 )
 
@@ -60,15 +60,9 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 			httploader.WithBlockPrivateNetworks(false),
 			httploader.WithBlockLinkLocalNetworks(false),
 			httploader.WithBlockNetworks(),
+			httploader.WithUserAgent("RailwayImagesClient/1.0 (Platform: Linux; Architecture: x64)"),
 		))
 	}
-
-	// if false {
-	// 	loaders = append(loaders, s3storage.New())
-	// }
-	// if false {
-	// 	loaders = append(loaders, gcloudstorage.New())
-	// }
 
 	imagorService := i.New(
 		i.WithLoaders(loaders...),
