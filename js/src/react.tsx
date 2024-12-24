@@ -13,6 +13,7 @@ import {
 	useEffect,
 	useMemo,
 	useRef,
+	useState,
 } from "react";
 
 const RailwayImagesContext = createContext<RailwayImagesContextType>({});
@@ -26,12 +27,13 @@ type RailwayImagesContextType = {
 };
 const store = createStore();
 
-export function Provider(
-	props: RailwayImagesContextType & { children: React.ReactNode },
-) {
+export function Provider({
+	children,
+	...props
+}: RailwayImagesContextType & { children: React.ReactNode }) {
 	return (
 		<RailwayImagesContext.Provider value={props}>
-			<JotaiProvider store={store}></JotaiProvider>
+			<JotaiProvider store={store}>{children}</JotaiProvider>
 		</RailwayImagesContext.Provider>
 	);
 }
@@ -278,93 +280,125 @@ export function useProgress(atom: UploaderFileAtom): number {
 	return useAtomValue(useAtomValue(atom, { store }).progress, { store });
 }
 
-export async function uploadFile(
-	file: UploaderFileAtom,
-	options: UploadFileOptions = {},
-) {
-	const { onProgress, onCancel, onSuccess, onError } = options;
-	const { get, set } = store;
-	const f = get(file);
-	const uploadingFile = get(file);
-	if (get(uploadingFile.status) === "cancelled") {
-		return;
-	}
-
-	set(uploadingFile.status, "uploading");
-	// If we catch an abort make sure the upload status has been changed to
-	// cancel
-	const abortSignal = f.abortController.signal;
-	// eslint-disable-next-line func-style
-	const handleAbortSignal = (): void => {
-		onCancel?.();
-		set(uploadingFile.status, "cancelled");
-		abortSignal.removeEventListener("abort", handleAbortSignal);
-	};
-	abortSignal.addEventListener("abort", handleAbortSignal);
-	let response: Response;
-	const responses: Promise<typeof response>[] = [];
-
-	// Bails out if we have aborted in the meantime
-	if (
-		f.abortController.signal.aborted ||
-		get(uploadingFile.status) === "cancelled"
+/**
+ * A hook that returns a callback for uploading a file to the server
+ *
+ * @example
+ * ```tsx
+ *  const uploadFile = useUploadFile();
+ *  ...
+ *  uploadFile(file)
+ * ```
+ */
+export function useUploadFile() {
+	const ctx = useContext(RailwayImagesContext);
+	return useCallback(async function uploadFile(
+		file: UploaderFileAtom,
+		options: UploadFileOptions = {},
 	) {
-		return;
-	}
+		const { onProgress, onCancel, onSuccess, onError } = options;
+		const { get, set } = store;
+		const f = get(file);
+		const uploadingFile = get(file);
+		if (get(uploadingFile.status) === "cancelled") {
+			return;
+		}
+
+		set(uploadingFile.status, "uploading");
+		// If we catch an abort make sure the upload status has been changed to
+		// cancel
+		const abortSignal = f.abortController.signal;
+		// eslint-disable-next-line func-style
+		const handleAbortSignal = (): void => {
+			onCancel?.();
+			set(uploadingFile.status, "cancelled");
+			abortSignal.removeEventListener("abort", handleAbortSignal);
+		};
+		abortSignal.addEventListener("abort", handleAbortSignal);
+		let response: Response;
+		const responses: Promise<typeof response>[] = [];
+
+		// Bails out if we have aborted in the meantime
+		if (
+			f.abortController.signal.aborted ||
+			get(uploadingFile.status) === "cancelled"
+		) {
+			return;
+		}
+
+		try {
+			response = await new Promise((resolve, reject) => {
+				const xhr = new XMLHttpRequest();
+				abortSignal.addEventListener("abort", () => {
+					xhr.abort();
+					reject(new DOMException("Aborted", "AbortError"));
+				});
+				xhr.upload.addEventListener("progress", (e) => {
+					if (e.lengthComputable) {
+						set(f.bytesUploaded, e.loaded);
+						onProgress?.(get(f.progress));
+					}
+				});
+				xhr.addEventListener("load", () => {
+					resolve(
+						new Response(xhr.response, {
+							status: xhr.status,
+							statusText: xhr.statusText,
+							headers: parseHeaders(xhr.getAllResponseHeaders()),
+						}),
+					);
+				});
+				xhr.addEventListener("error", () => reject(new Error("Upload failed")));
+				xhr.open("PUT", joinPath(ctx.endpoints?.put ?? "", f.key));
+				xhr.send(f.file);
+			});
+
+			if (!response.ok) {
+				try {
+					const responseText = await response.text();
+					throw responseText;
+				} catch (e) {
+					throw `${response.status}: ${response.statusText}`;
+				}
+			}
+		} catch (err) {
+			set(uploadingFile.status, "error");
+			const error =
+				typeof err === "string"
+					? err
+					: err instanceof Error
+						? err.message
+						: "An unknown error occurred";
+			set(file, (current) => ({ ...current, error }));
+			onError?.(err);
+		} finally {
+			abortSignal.removeEventListener("abort", handleAbortSignal);
+		}
+
+		if (get(uploadingFile.status) === "uploading") {
+			set(uploadingFile.status, "success");
+			set(file, (current) => ({ ...current, response }));
+			onSuccess?.(response!);
+		}
+	}, []);
+}
+
+function joinPath(base: string, path: string) {
+	if (!base) return path;
+	if (!path) return base;
 
 	try {
-		response = await new Promise((resolve, reject) => {
-			const xhr = new XMLHttpRequest();
-			abortSignal.addEventListener("abort", () => {
-				xhr.abort();
-				reject(new DOMException("Aborted", "AbortError"));
-			});
-			xhr.upload.addEventListener("progress", (e) => {
-				if (e.lengthComputable) {
-					set(f.bytesUploaded, e.loaded);
-					onProgress?.(get(f.progress));
-				}
-			});
-			xhr.addEventListener("load", () => {
-				resolve(
-					new Response(xhr.response, {
-						status: xhr.status,
-						statusText: xhr.statusText,
-						headers: parseHeaders(xhr.getAllResponseHeaders()),
-					}),
-				);
-			});
-			xhr.addEventListener("error", () => reject(new Error("Upload failed")));
-			xhr.open("PUT", "/images/" + f.key);
-			xhr.send(f.file);
-		});
-
-		if (!response.ok) {
-			try {
-				const responseText = await response.text();
-				throw responseText;
-			} catch (e) {
-				throw `${response.status}: ${response.statusText}`;
-			}
-		}
-	} catch (err) {
-		set(uploadingFile.status, "error");
-		const error =
-			typeof err === "string"
-				? err
-				: err instanceof Error
-					? err.message
-					: "An unknown error occurred";
-		set(file, (current) => ({ ...current, error }));
-		onError?.(err);
-	} finally {
-		abortSignal.removeEventListener("abort", handleAbortSignal);
-	}
-
-	if (get(uploadingFile.status) === "uploading") {
-		set(uploadingFile.status, "success");
-		set(file, (current) => ({ ...current, response }));
-		onSuccess?.(response!);
+		// Try parsing base as a full URL first
+		const baseUrl = new URL(base);
+		baseUrl.pathname = `${baseUrl.pathname}/${path}`.replace(/\/{2,}/g, "/");
+		return baseUrl.toString();
+	} catch {
+		// If base isn't a valid URL, treat it as a path
+		const u = new URL(
+			typeof window === "undefined" ? "http://localhost" : window.location.href,
+		);
+		u.pathname = `${base}/${path}`.replace(/\/{2,}/g, "/");
+		return u.pathname; // Return just the path portion
 	}
 }
 
@@ -386,6 +420,81 @@ function parseHeaders(headerStr: string) {
 
 	return headers;
 }
+
+export function usePreviewUrl(file: UploaderFileAtom | undefined | null) {
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(null);
+	const [status, setStatus] = useState<PreviewStatus>("idle");
+
+	const clearPreview = useCallback(() => {
+		setPreviewUrl(null);
+		setError(null);
+		setStatus("idle");
+	}, []);
+
+	useEffect(() => {
+		if (!file) {
+			clearPreview();
+			return;
+		}
+
+		const f = store.get(file);
+
+		if (!f.file) {
+			clearPreview();
+			return;
+		}
+
+		setStatus("loading");
+		setError(null);
+
+		// Validate file type
+		if (!f.file.type.startsWith("image/")) {
+			setError("Selected file is not an image");
+			setPreviewUrl(null);
+			setStatus("error");
+			return;
+		}
+
+		const reader = new FileReader();
+
+		reader.onload = (e) => {
+			if (
+				e.target instanceof FileReader &&
+				typeof e.target.result === "string"
+			) {
+				setPreviewUrl(e.target.result);
+				setError(null);
+				setStatus("success");
+			}
+		};
+
+		reader.onerror = () => {
+			setError("Error reading file");
+			setPreviewUrl(null);
+			setStatus("error");
+		};
+
+		reader.readAsDataURL(f.file);
+		return () => {
+			reader.abort();
+			clearPreview();
+		};
+	}, [file, clearPreview]);
+
+	return [
+		previewUrl,
+		useMemo(() => {
+			return {
+				error,
+				status,
+				clear: clearPreview,
+			};
+		}, [error, status, clearPreview]),
+	] as const;
+}
+
+type PreviewStatus = "idle" | "loading" | "success" | "error";
 
 type UploadFileOptions = {
 	/**
