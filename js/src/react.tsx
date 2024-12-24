@@ -228,7 +228,7 @@ export function useCancelFileUpload(atom: UploaderFileAtom): () => void {
 	const file = useAtomValue(atom, { store });
 	const setStatus = useSetAtom(file.status, { store });
 	return useCallback(() => {
-		file.abortController?.abort();
+		file.abortController.abort();
 		setStatus("cancelled");
 	}, [setStatus, file.abortController]);
 }
@@ -316,7 +316,6 @@ export function useUploadFile() {
 		};
 		abortSignal.addEventListener("abort", handleAbortSignal);
 		let response: Response;
-		const responses: Promise<typeof response>[] = [];
 
 		// Bails out if we have aborted in the meantime
 		if (
@@ -421,11 +420,10 @@ function parseHeaders(headerStr: string) {
 	return headers;
 }
 
-export function usePreviewUrl(file: UploaderFileAtom | undefined | null) {
+export function usePreviewUrl(file: UploaderFileAtom) {
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [status, setStatus] = useState<PreviewStatus>("idle");
-
 	const clearPreview = useCallback(() => {
 		setPreviewUrl(null);
 		setError(null);
@@ -433,11 +431,6 @@ export function usePreviewUrl(file: UploaderFileAtom | undefined | null) {
 	}, []);
 
 	useEffect(() => {
-		if (!file) {
-			clearPreview();
-			return;
-		}
-
 		const f = store.get(file);
 
 		if (!f.file) {
