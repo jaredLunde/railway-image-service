@@ -31,17 +31,7 @@ export class RailwayImagesClient {
 			"x-api-key": this.secretKey,
 		};
 
-		const response = await fetch(url.toString(), {
-			...init,
-			headers,
-		});
-
-		if (!response.ok) {
-			const text = await response.text();
-			throw new Error(`HTTP error ${response.status}: ${text}`);
-		}
-
-		return response;
+		return fetch(url.toString(), { ...init, headers });
 	}
 
 	async sign(path: string): Promise<string> {

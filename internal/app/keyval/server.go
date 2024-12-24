@@ -155,7 +155,6 @@ func (k *KeyVal) Write(key []byte, value io.Reader, valueLen int) int {
 	buf := make([]byte, 32*1024)
 	limitedReader := io.LimitReader(value, int64(k.maxFileSize+1))
 	teeReader := io.TeeReader(limitedReader, h)
-
 	prefix := make([]byte, 512)
 	n, _ := io.ReadFull(teeReader, prefix)
 	if n == 0 {
@@ -196,10 +195,7 @@ func (k *KeyVal) Write(key []byte, value io.Reader, valueLen int) int {
 		return fiber.StatusInternalServerError
 	}
 
-	// Close the temp file before moving it
 	tmpFile.Close()
-
-	// Move the temp file to the final location
 	if err := os.Rename(tmpFile.Name(), fp); err != nil {
 		k.log.Error("failed to move temp file", "error", err)
 		return fiber.StatusInternalServerError

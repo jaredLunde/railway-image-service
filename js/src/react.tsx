@@ -15,11 +15,14 @@ import {
 	useRef,
 } from "react";
 
-const RailwayImagesContext = createContext<RailwayImagesContextType>({
-	signEndpoint: "",
-});
+const RailwayImagesContext = createContext<RailwayImagesContextType>({});
 type RailwayImagesContextType = {
-	signEndpoint: string;
+	maxFileSize?: number;
+	endpoints?: {
+		get?: string;
+		put?: string;
+		sign?: string;
+	};
 };
 const store = createStore();
 
@@ -43,6 +46,8 @@ type ImageProps = {
 };
 
 type ImageFormat = "jpeg" | "png" | "webp" | "avif";
+
+export const IMAGE_MIMES = "image/*";
 
 /**
  * A hook that returns a callback for selecting files from the browser dialog
@@ -99,9 +104,10 @@ export function useSelectFiles(
 						continue;
 					}
 
+					const k = typeof key === "function" ? key(file) : key;
 					const data = {
 						id: crypto.randomUUID(),
-						key: `${(key ?? "").replace(/^\//, "")}`,
+						key: `${(k ?? (file.webkitRelativePath || file.name)).replace(/^\//, "")}`,
 						file,
 						source: URL.createObjectURL(file),
 					};
@@ -175,9 +181,10 @@ export function useSelectDirectory(
 						continue;
 					}
 
+					const k = typeof key === "function" ? key(file) : key;
 					const data = {
 						id: crypto.randomUUID(),
-						key: `${(key ?? "").replace(/^\//, "")}`,
+						key: `${(k ?? file.webkitRelativePath).replace(/^\//, "")}`,
 						file,
 						source: URL.createObjectURL(file),
 					};
@@ -218,7 +225,6 @@ export function useSelectDirectory(
 export function useCancelFileUpload(atom: UploaderFileAtom): () => void {
 	const file = useAtomValue(atom, { store });
 	const setStatus = useSetAtom(file.status, { store });
-
 	return useCallback(() => {
 		file.abortController?.abort();
 		setStatus("cancelled");
@@ -234,7 +240,7 @@ export function useCancelFileUpload(atom: UploaderFileAtom): () => void {
 export function useFileData(
 	atom: PrimitiveAtom<UploaderFile>,
 ): UploaderFileData {
-	const file = useAtomValue(atom);
+	const file = useAtomValue(atom, { store });
 	return useMemo(
 		() => ({
 			id: file.id,
@@ -254,7 +260,7 @@ export function useFileData(
 export function useFileStatus(
 	atom: UploaderFileAtom,
 ): ExtractAtomValue<UploaderFile["status"]> {
-	return useAtomValue(useAtomValue(atom).status);
+	return useAtomValue(useAtomValue(atom, { store }).status, { store });
 }
 
 /**
@@ -269,7 +275,7 @@ export function useFileStatus(
  * ```
  */
 export function useProgress(atom: UploaderFileAtom): number {
-	return useAtomValue(useAtomValue(atom).progress);
+	return useAtomValue(useAtomValue(atom, { store }).progress, { store });
 }
 
 export async function uploadFile(
@@ -277,7 +283,7 @@ export async function uploadFile(
 	options: UploadFileOptions = {},
 ) {
 	const { onProgress, onCancel, onSuccess, onError } = options;
-	const { get, set } = options.store ?? store;
+	const { get, set } = store;
 	const f = get(file);
 	const uploadingFile = get(file);
 	if (get(uploadingFile.status) === "cancelled") {
@@ -319,27 +325,15 @@ export async function uploadFile(
 					onProgress?.(get(f.progress));
 				}
 			});
-			xhr.addEventListener("load", () =>
+			xhr.addEventListener("load", () => {
 				resolve(
 					new Response(xhr.response, {
 						status: xhr.status,
 						statusText: xhr.statusText,
-						headers: new Headers(
-							xhr
-								.getAllResponseHeaders()
-								.split("\r\n")
-								.reduce(
-									(acc, cur) => {
-										const [key, value] = cur.split(": ");
-										if (key) acc[key] = value;
-										return acc;
-									},
-									{} as Record<string, string>,
-								),
-						),
+						headers: parseHeaders(xhr.getAllResponseHeaders()),
 					}),
-				),
-			);
+				);
+			});
 			xhr.addEventListener("error", () => reject(new Error("Upload failed")));
 			xhr.open("PUT", "/images/" + f.key);
 			xhr.send(f.file);
@@ -374,6 +368,25 @@ export async function uploadFile(
 	}
 }
 
+function parseHeaders(headerStr: string) {
+	const headers = new Headers();
+	if (!headerStr) return headers;
+
+	// Split into lines and filter out empty ones
+	const headerPairs = headerStr.trim().split(/[\r\n]+/);
+
+	headerPairs.forEach((line) => {
+		const parts = line.split(": ");
+		const key = parts.shift();
+		const value = parts.join(": "); // Rejoin in case value contained ': '
+		if (key && value) {
+			headers.append(key.trim(), value.trim());
+		}
+	});
+
+	return headers;
+}
+
 type UploadFileOptions = {
 	/**
 	 * A function that is called when the upload is cancelled
@@ -391,10 +404,6 @@ type UploadFileOptions = {
 	 * Called when there was an error uploading
 	 */
 	onError?: (err: unknown) => Promise<void> | void;
-	/**
-	 * A jotai store
-	 */
-	store?: ReturnType<typeof createStore>;
 };
 
 export type UploaderFilesAtomValue = {
@@ -470,7 +479,7 @@ export type SelectFilesCallback = (options?: {
 	 * The base path to upload to on the server-side. The file's name will
 	 * be joined to this.
 	 */
-	key?: string;
+	key?: string | ((file: File) => string);
 }) => void;
 
 export type SelectDirectoryCallback = SelectFilesCallback;

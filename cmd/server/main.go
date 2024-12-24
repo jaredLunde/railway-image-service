@@ -86,7 +86,7 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		StrictRouting:     true,
-		BodyLimit:         cfg.MaxUploadSize,
+		BodyLimit:         cfg.MaxUploadSize, // This doesn't actually work with StreamBodyRequest, but it's here for good times
 		WriteTimeout:      cfg.RequestTimeout,
 		ReadTimeout:       cfg.RequestTimeout,
 		StreamRequestBody: true,
