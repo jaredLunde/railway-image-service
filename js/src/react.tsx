@@ -23,6 +23,9 @@ const RailwayImagesContext = createContext<RailwayImagesContextType>({
 });
 
 type RailwayImagesContextType = {
+	/**
+	 * The maximum size of an image that can be uploaded in bytes.
+	 */
 	maxUploadSize?: number;
 	url:
 		| string
@@ -55,7 +58,44 @@ export function Provider({
 }
 
 /**
- * A React component that generates an image URL using the Thumbor URL specification.
+ * A React component that generates an image URL using the Thumbor URL specification and
+ * creates an `img` element with the generated URL.
+ *
+ * This component contains filters and transforms that are desirable for avatars.
+ */
+export function Avatar({
+	transform,
+	filters,
+	size,
+	...props
+}: Omit<ImageProps, "width" | "height" | "fit" | "srcKey" | "src"> & {
+	size: number;
+} & ({ srcKey: string } | { src: string })) {
+	return (
+		<Image
+			fit="cover"
+			width={size}
+			height={size}
+			transform={{
+				smart: true,
+				...transform,
+			}}
+			filters={{
+				upscale: true,
+				quality: 80,
+				strip_exif: true,
+				strip_metadata: true,
+				strip_icc: true,
+				...filters,
+			}}
+			{...props}
+		/>
+	);
+}
+
+/**
+ * A React component that generates an image URL using the Thumbor URL specification and
+ * creates an `img` element with the generated URL.
  *
  * The URL is constructed in the following order:
  * /trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters/IMAGE
@@ -164,6 +204,8 @@ export function Image({
 			? encodeURIComponent(srcKey)
 			: srcKey;
 		segments.push(encodedKey);
+		// @ts-expect-error: it's fine
+		delete props["srcKey"];
 	} else {
 		segments.push(encodeURIComponent(props.src));
 	}
