@@ -54,8 +54,42 @@ export function Provider({
 	);
 }
 
+/**
+ * A React component that generates an image URL using the Thumbor URL specification.
+ *
+ * The URL is constructed in the following order:
+ * /unsafe/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters/IMAGE
+ *
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <Image srcKey="image.jpg" width={400} height={300} />
+ *
+ * // With transformations
+ * <Image
+ *   srcKey="image.jpg"
+ *   width={400}
+ *   height={300}
+ *   transform={{
+ *     trim: true,
+ *     smart: true,
+ *     flip: "horizontal",
+ *     align: { horizontal: "left", vertical: "top" }
+ *   }}
+ * />
+ *
+ * // With filters
+ * <Image
+ *   srcKey="image.jpg"
+ *   filters={{
+ *     quality: 85,
+ *     format: "webp",
+ *     blur: 2
+ *   }}
+ * />
+ * ```
+ */
 export function Image({
-	srcKey,
 	transform,
 	filters,
 	className,
@@ -66,17 +100,15 @@ export function Image({
 	const segments: string[] = [];
 
 	if (transform || props.width || props.height) {
-		// 2. Add trim if specified
 		if (transform?.trim) {
 			segments.push("trim");
 		}
 
-		// 3. Add manual crop coordinates if specified (AxB:CxD)
+		// Add manual crop coordinates if specified (AxB:CxD)
 		function add(a: number | string, b: number | string): number | string {
 			if (typeof a === "number" && typeof b === "number") {
 				return a + b;
 			}
-			// For percentages, return the sum as a string
 			return `${Number(String(a).replace("%", "")) + Number(String(b).replace("%", ""))}`;
 		}
 		if (transform?.crop) {
@@ -84,7 +116,6 @@ export function Image({
 			segments.push(`${x}x${y}:${add(x, width)}x${add(y, height)}`);
 		}
 
-		// 4 & 5. Add fit-in and stretch flags based on fit mode
 		if (props.fit === "contain" || props.fit === "contain-stretch") {
 			segments.push("fit-in");
 		}
@@ -92,28 +123,25 @@ export function Image({
 			segments.push("stretch");
 		}
 
-		// 6. Add dimensions with flip flags (-Ex-F)
 		if (props.width || props.height) {
 			const w = props.width
-				? `${transform?.flip === "horizontal" || transform?.flip === "both" ? "-" : ""}${props.width}`
-				: props.width;
+				? `${transform?.flip === "horizontal" || transform?.flip === "both" ? "-" : ""}${props.width ?? 0}`
+				: props.width ?? 0;
 			const h = props.height
-				? `${transform?.flip === "vertical" || transform?.flip === "both" ? "-" : ""}${props.height}`
-				: props.height;
+				? `${transform?.flip === "vertical" || transform?.flip === "both" ? "-" : ""}${props.height ?? 0}`
+				: props.height ?? 0;
 			segments.push(`${w}x${h}`);
 		}
 
-		// 7. Add padding if specified (GxH:IxJ)
 		if (transform?.padding) {
 			const { left, top, right, bottom } = transform.padding;
 			segments.push(`${left}x${top}:${right}x${bottom}`);
 		}
 
-		// 8 & 9. Add alignment if any transformations are applied
 		if (
+			props?.fit === "contain" ||
 			transform?.trim ||
 			transform?.crop ||
-			transform?.fit ||
 			transform?.padding ||
 			transform?.smart
 		) {
@@ -121,31 +149,32 @@ export function Image({
 			segments.push(transform?.align?.vertical || "middle");
 		}
 
-		// 10. Add smart flag
 		if (transform?.smart) {
 			segments.push("smart");
 		}
 	}
 
-	// 11. Add filters if any
 	if (filters && Object.keys(filters).length > 0) {
 		segments.push(`filters:${buildFilterString(filters)}`);
 	}
 
-	// 12. Finally add the image key (encoded if it contains query params)
-	srcKey = `files/${srcKey}`;
-	const encodedKey = srcKey.includes("?") ? encodeURIComponent(srcKey) : srcKey;
-	segments.push(encodedKey);
+	if ("srcKey" in props) {
+		const srcKey = `files/${props.srcKey}`;
+		const encodedKey = srcKey.includes("?")
+			? encodeURIComponent(srcKey)
+			: srcKey;
+		segments.push(encodedKey);
+	} else {
+		segments.push(encodeURIComponent(props.src));
+	}
 
-	// Construct final URL
 	const baseUrl = typeof ctx.url === "string" ? ctx.url : ctx.url.get;
-
 	return (
 		<img
-			src={joinPath(baseUrl, segments.join("/"))}
 			alt={alt}
 			className={className}
 			{...props}
+			src={joinPath(baseUrl, segments.join("/"))}
 		/>
 	);
 }
@@ -364,8 +393,7 @@ export type Transform = {
 	};
 };
 
-export type ImageProps = {
-	srcKey: string;
+export type ImageProps = ({ src: string } | { srcKey: string }) & {
 	width?: number;
 	height?: number;
 	/**
@@ -381,9 +409,9 @@ export type ImageProps = {
 	 */
 	filters?: Partial<ImageFilters>;
 } & Omit<
-	React.ImgHTMLAttributes<HTMLImageElement>,
-	"src" | "width" | "height" | "key"
->;
+		React.ImgHTMLAttributes<HTMLImageElement>,
+		"src" | "width" | "height" | "key"
+	>;
 
 /**
  * The MIME types for images. Can be used with `accept` in `useSelectFiles`.
