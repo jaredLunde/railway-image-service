@@ -219,9 +219,14 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 	m := c.Queries()
 
 	// List query
-	if string(c.Path()) == k.basePath && c.Method() == fiber.MethodGet {
+	if string(key) == k.basePath && method == fiber.MethodGet {
 		k.QueryHandler(key, c)
 		return nil
+	}
+
+	key = bytes.Replace(key, []byte(k.basePath), []byte(""), 1)
+	if bytes.HasPrefix(key, []byte("/")) {
+		key = key[1:]
 	}
 
 	// Lock the key while a PUT or DELETE is in progress
@@ -262,13 +267,13 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 		}
 
 	case fiber.MethodPut:
-		// no empty values
-		if c.Request().Header.ContentLength() == 0 {
-			c.Status(411)
+		contentLength := c.Request().Header.ContentLength()
+		if contentLength == 0 {
+			c.Status(fiber.StatusLengthRequired)
 			return nil
 		}
 
-		status := k.Write(key, c.Request().BodyStream(), c.Request().Header.ContentLength())
+		status := k.Write(key, c.Request().BodyStream(), contentLength)
 		c.Status(status)
 
 	case fiber.MethodDelete:

@@ -1,3 +1,5 @@
+"use client";
+
 import type { Atom, ExtractAtomValue, PrimitiveAtom } from "jotai";
 import { createStore } from "jotai";
 import {
@@ -18,14 +20,18 @@ import {
 
 const RailwayImagesContext = createContext<RailwayImagesContextType>({});
 type RailwayImagesContextType = {
-	maxFileSize?: number;
+	maxUploadSize?: number;
 	endpoints?: {
 		get?: string;
 		put?: string;
 		sign?: string;
 	};
 };
-const store = createStore();
+
+/**
+ * A Jotai store used exclusively by Railway Image Service React components.
+ */
+const filesStore = createStore();
 
 export function Provider({
 	children,
@@ -33,7 +39,7 @@ export function Provider({
 }: RailwayImagesContextType & { children: React.ReactNode }) {
 	return (
 		<RailwayImagesContext.Provider value={props}>
-			<JotaiProvider store={store}>{children}</JotaiProvider>
+			<JotaiProvider store={filesStore}>{children}</JotaiProvider>
 		</RailwayImagesContext.Provider>
 	);
 }
@@ -52,8 +58,7 @@ type ImageFormat = "jpeg" | "png" | "webp" | "avif";
 export const IMAGE_MIMES = "image/*";
 
 /**
- * A hook that returns a callback for selecting files from the browser dialog
- * and adding them to an array of pending files at a given ID.
+ * A hook that returns a callback for selecting files from the browser dialog.
  *
  * @param options - Select file options
  */
@@ -69,9 +74,9 @@ export function useSelectFiles(
 		 */
 		multiple?: boolean;
 		/**
-		 * Called after the selected file atoms have been created
+		 * Called after files have been selected
 		 */
-		onSelect?: (file: UploaderFileAtom) => void | Promise<void>;
+		onSelect?: OnSelect;
 	} = {},
 ): SelectFilesCallback {
 	const storedOptions = useRef(options);
@@ -91,13 +96,11 @@ export function useSelectFiles(
 
 		const onChange: EventListener = async (e) => {
 			if (e.target instanceof HTMLInputElement) {
-				const files: UploaderFileAtom[] = [];
 				const target = e.target;
 
 				for (const fileIndex in target.files) {
 					const index = Number(fileIndex);
-
-					if (isNaN(Number(index))) {
+					if (isNaN(index)) {
 						continue;
 					}
 
@@ -106,27 +109,7 @@ export function useSelectFiles(
 						continue;
 					}
 
-					const k = typeof key === "function" ? key(file) : key;
-					const data = {
-						id: crypto.randomUUID(),
-						key: `${(k ?? (file.webkitRelativePath || file.name)).replace(/^\//, "")}`,
-						file,
-						source: URL.createObjectURL(file),
-					};
-
-					const bytesUploadedAtom = atom(0);
-					const fileAtom = atom<UploaderFile>({
-						...data,
-						bytesUploaded: bytesUploadedAtom,
-						progress: atom((get) => {
-							return get(bytesUploadedAtom) / file.size;
-						}),
-						status: atom<ExtractAtomValue<UploaderFile["status"]>>("idle"),
-						abortController: new AbortController(),
-					});
-
-					files.push(fileAtom);
-					storedOptions.current.onSelect?.(fileAtom);
+					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
 				}
 				// Remove event listener after operation
 				el.removeEventListener("change", onChange);
@@ -141,15 +124,14 @@ export function useSelectFiles(
 }
 
 /**
- * A hook that returns a callback for selecting a directory from the browser dialog
- * and adding its contents to an array of pending files at a given ID.
+ * A hook that returns a callback for selecting a directory from the browser dialog.
  */
 export function useSelectDirectory(
 	options: {
 		/**
-		 * Called after the selected file atoms have been created
+		 * Called after files have been selected
 		 */
-		onSelect?: (file: UploaderFileAtom) => void | Promise<void>;
+		onSelect?: OnSelect;
 	} = {},
 ): SelectDirectoryCallback {
 	const storedOptions = useRef(options);
@@ -166,44 +148,20 @@ export function useSelectDirectory(
 		// eslint-disable-next-line func-style
 		const onChange: EventListener = async (e) => {
 			if (e.target instanceof HTMLInputElement) {
-				const files: UploaderFileAtom[] = [];
 				const target = e.target;
 
 				for (const fileIndex in target.files) {
 					const index = Number(fileIndex);
-
-					if (isNaN(Number(index))) {
+					if (isNaN(index)) {
 						continue;
 					}
-
 					// Get file object
 					const file = target.files.item(index);
-
 					if (file === null) {
 						continue;
 					}
 
-					const k = typeof key === "function" ? key(file) : key;
-					const data = {
-						id: crypto.randomUUID(),
-						key: `${(k ?? file.webkitRelativePath).replace(/^\//, "")}`,
-						file,
-						source: URL.createObjectURL(file),
-					};
-
-					const bytesUploadedAtom = atom(0);
-					const fileAtom = atom<UploaderFile>({
-						...data,
-						bytesUploaded: bytesUploadedAtom,
-						progress: atom((get) => {
-							return get(bytesUploadedAtom) / file.size;
-						}),
-						status: atom<ExtractAtomValue<UploaderFile["status"]>>("idle"),
-						abortController: new AbortController(),
-					});
-
-					files.push(fileAtom);
-					storedOptions.current.onSelect?.(fileAtom);
+					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
 				}
 
 				// Remove event listener after operation
@@ -219,39 +177,82 @@ export function useSelectDirectory(
 }
 
 /**
- * A hook that returns a callback for cancelling a file upload if
- * possible.
- *
- * @param atom - A file atom
+ * A hook that handles drag-n-drop file uploads
  */
-export function useCancelFileUpload(atom: UploaderFileAtom): () => void {
-	const file = useAtomValue(atom, { store });
-	const setStatus = useSetAtom(file.status, { store });
-	return useCallback(() => {
-		file.abortController.abort();
-		setStatus("cancelled");
-	}, [setStatus, file.abortController]);
+export function useDropFiles(
+	options: {
+		/**
+		 * The key that will be stored in the key/value store for the file.
+		 */
+		key?: Key;
+		/**
+		 * Called after files have been selected
+		 */
+		onSelect?: OnSelect;
+	} = {},
+): {
+	props: React.HTMLAttributes<HTMLElement>;
+	isActive: boolean;
+} {
+	const [isActive, setIsOver] = useState(false);
+	const storedOptions = useRef(options);
+	useEffect(() => {
+		storedOptions.current = options;
+	});
+	const props = useMemo<React.HTMLAttributes<HTMLElement>>(
+		() => ({
+			onDragEnter(e) {
+				e.preventDefault();
+				setIsOver(true);
+			},
+			onDragOver(e) {
+				e.preventDefault();
+				setIsOver(true);
+			},
+			onDragLeave(e) {
+				e.preventDefault();
+				setIsOver(false);
+			},
+			async onDrop(e) {
+				e.preventDefault();
+				const key = storedOptions.current.key;
+
+				for (const file of e.dataTransfer.files) {
+					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
+				}
+
+				setIsOver(false);
+			},
+		}),
+		[],
+	);
+
+	return useMemo(() => {
+		return {
+			props,
+			isActive,
+		};
+	}, [props, isActive]);
 }
 
-/**
- * A hook that returns the `name`, `size`, `source`, and `id` from a
- * file atom
- *
- * @param atom - A file atom
- */
-export function useFileData(
-	atom: PrimitiveAtom<UploaderFile>,
-): UploaderFileData {
-	const file = useAtomValue(atom, { store });
-	return useMemo(
-		() => ({
-			id: file.id,
-			key: file.key,
-			file: file.file,
-			source: file.source,
+async function createSelectedFile(file: File, key?: Key) {
+	const k = await Promise.resolve(typeof key === "function" ? key(file) : key);
+	const data = {
+		key: `${(k ?? (file.webkitRelativePath || file.name)).replace(/^\//, "")}`,
+		file,
+		source: URL.createObjectURL(file),
+	};
+
+	const bytesUploaded = atom(0);
+	return atom<SelectedFileData>({
+		...data,
+		bytesUploaded,
+		progress: atom((get) => {
+			return get(bytesUploaded) / file.size;
 		}),
-		[file.id, file.key, file.file, file.source],
-	);
+		status: atom<ExtractAtomValue<SelectedFileData["status"]>>("idle"),
+		abortController: new AbortController(),
+	});
 }
 
 /**
@@ -260,9 +261,11 @@ export function useFileData(
  * @param atom - A file atom
  */
 export function useFileStatus(
-	atom: UploaderFileAtom,
-): ExtractAtomValue<UploaderFile["status"]> {
-	return useAtomValue(useAtomValue(atom, { store }).status, { store });
+	atom: SelectedFile,
+): ExtractAtomValue<SelectedFileData["status"]> {
+	return useAtomValue(useAtomValue(atom, { store: filesStore }).status, {
+		store: filesStore,
+	});
 }
 
 /**
@@ -272,12 +275,14 @@ export function useFileStatus(
  * @param atom - A file atom
  * @example
  * ```tsx
- * const progress = useProgress(fileAtom);
+ * const progress = useProgress(selectedFile);
  * return <span>{progress * 100}% uploaded</span>
  * ```
  */
-export function useProgress(atom: UploaderFileAtom): number {
-	return useAtomValue(useAtomValue(atom, { store }).progress, { store });
+export function useProgress(atom: SelectedFile): number {
+	return useAtomValue(useAtomValue(atom, { store: filesStore }).progress, {
+		store: filesStore,
+	});
 }
 
 /**
@@ -292,94 +297,130 @@ export function useProgress(atom: UploaderFileAtom): number {
  */
 export function useUploadFile() {
 	const ctx = useContext(RailwayImagesContext);
-	return useCallback(async function uploadFile(
-		file: UploaderFileAtom,
-		options: UploadFileOptions = {},
-	) {
-		const { onProgress, onCancel, onSuccess, onError } = options;
-		const { get, set } = store;
-		const f = get(file);
-		const uploadingFile = get(file);
-		if (get(uploadingFile.status) === "cancelled") {
-			return;
-		}
-
-		set(uploadingFile.status, "uploading");
-		// If we catch an abort make sure the upload status has been changed to
-		// cancel
-		const abortSignal = f.abortController.signal;
-		// eslint-disable-next-line func-style
-		const handleAbortSignal = (): void => {
-			onCancel?.();
-			set(uploadingFile.status, "cancelled");
-			abortSignal.removeEventListener("abort", handleAbortSignal);
-		};
-		abortSignal.addEventListener("abort", handleAbortSignal);
-		let response: Response;
-
-		// Bails out if we have aborted in the meantime
-		if (
-			f.abortController.signal.aborted ||
-			get(uploadingFile.status) === "cancelled"
+	return useCallback(
+		async function uploadFile(
+			file: SelectedFile,
+			options: UploadFileOptions = {},
 		) {
-			return;
-		}
-
-		try {
-			response = await new Promise((resolve, reject) => {
-				const xhr = new XMLHttpRequest();
-				abortSignal.addEventListener("abort", () => {
-					xhr.abort();
-					reject(new DOMException("Aborted", "AbortError"));
-				});
-				xhr.upload.addEventListener("progress", (e) => {
-					if (e.lengthComputable) {
-						set(f.bytesUploaded, e.loaded);
-						onProgress?.(get(f.progress));
-					}
-				});
-				xhr.addEventListener("load", () => {
-					resolve(
-						new Response(xhr.response, {
-							status: xhr.status,
-							statusText: xhr.statusText,
-							headers: parseHeaders(xhr.getAllResponseHeaders()),
-						}),
-					);
-				});
-				xhr.addEventListener("error", () => reject(new Error("Upload failed")));
-				xhr.open("PUT", joinPath(ctx.endpoints?.put ?? "", f.key));
-				xhr.send(f.file);
-			});
-
-			if (!response.ok) {
-				try {
-					const responseText = await response.text();
-					throw responseText;
-				} catch (e) {
-					throw `${response.status}: ${response.statusText}`;
-				}
+			const { onProgress, onCancel, onSuccess, onError } = options;
+			const { get, set } = filesStore;
+			const f = get(file);
+			if (ctx.maxUploadSize && f.file.size > ctx.maxUploadSize) {
+				set(f.status, "error");
+				const error = new Error(
+					`File is too large. Max size is ${ctx.maxUploadSize} bytes.`,
+				);
+				set(file, (current) => ({ ...current, error: error.message }));
+				onError?.(error);
+				return;
 			}
-		} catch (err) {
-			set(uploadingFile.status, "error");
-			const error =
-				typeof err === "string"
-					? err
-					: err instanceof Error
-						? err.message
-						: "An unknown error occurred";
-			set(file, (current) => ({ ...current, error }));
-			onError?.(err);
-		} finally {
-			abortSignal.removeEventListener("abort", handleAbortSignal);
-		}
 
-		if (get(uploadingFile.status) === "uploading") {
-			set(uploadingFile.status, "success");
-			set(file, (current) => ({ ...current, response }));
-			onSuccess?.(response!);
-		}
-	}, []);
+			const uploadingFile = get(file);
+			if (get(uploadingFile.status) === "cancelled") {
+				return;
+			}
+
+			set(uploadingFile.status, "uploading");
+			// If we catch an abort make sure the upload status has been changed to
+			// cancel
+			const abortSignal = f.abortController.signal;
+			// eslint-disable-next-line func-style
+			const handleAbortSignal = (): void => {
+				onCancel?.();
+				set(uploadingFile.status, "cancelled");
+				abortSignal.removeEventListener("abort", handleAbortSignal);
+			};
+			abortSignal.addEventListener("abort", handleAbortSignal);
+			let response: Response;
+
+			// Bails out if we have aborted in the meantime
+			if (
+				f.abortController.signal.aborted ||
+				get(uploadingFile.status) === "cancelled"
+			) {
+				return;
+			}
+
+			const key = await Promise.resolve(
+				typeof options.key === "function"
+					? options.key(f.file)
+					: options.key ?? f.key,
+			);
+
+			try {
+				response = await new Promise((resolve, reject) => {
+					const xhr = new XMLHttpRequest();
+					abortSignal.addEventListener("abort", () => {
+						xhr.abort();
+						reject(new DOMException("Aborted", "AbortError"));
+					});
+					xhr.upload.addEventListener("progress", (e) => {
+						if (e.lengthComputable) {
+							set(f.bytesUploaded, e.loaded);
+							onProgress?.(get(f.progress));
+						}
+					});
+					xhr.addEventListener("load", () => {
+						resolve(
+							new Response(xhr.response, {
+								status: xhr.status,
+								statusText: xhr.statusText,
+								headers: parseHeaders(xhr.getAllResponseHeaders()),
+							}),
+						);
+					});
+					xhr.addEventListener("error", () =>
+						reject(new Error("Upload failed")),
+					);
+					xhr.open("PUT", joinPath(ctx.endpoints?.put ?? "", key));
+					xhr.send(f.file);
+				});
+
+				if (!response.ok) {
+					try {
+						const responseText = await response.text();
+						throw responseText;
+					} catch (e) {
+						throw `${response.status}: ${response.statusText}`;
+					}
+				}
+			} catch (err) {
+				set(uploadingFile.status, "error");
+				const error =
+					typeof err === "string"
+						? err
+						: err instanceof Error
+							? err.message
+							: "An unknown error occurred";
+				set(file, (current) => ({ ...current, error }));
+				onError?.(err);
+			} finally {
+				abortSignal.removeEventListener("abort", handleAbortSignal);
+			}
+
+			if (get(uploadingFile.status) === "uploading") {
+				set(uploadingFile.status, "success");
+				set(file, (current) => ({ ...current, response }));
+				onSuccess?.(response!);
+			}
+		},
+		[ctx.maxUploadSize, ctx.endpoints?.put, ctx.endpoints?.sign],
+	);
+}
+
+/**
+ * A hook that returns a callback for cancelling a file upload if
+ * possible.
+ *
+ * @param atom - A file atom
+ */
+export function useCancelUploadFile(atom: SelectedFile): () => void {
+	const file = useAtomValue(atom, { store: filesStore });
+	const setStatus = useSetAtom(file.status, { store: filesStore });
+	return useCallback(() => {
+		file.abortController.abort();
+		setStatus("cancelled");
+	}, [setStatus, file.abortController]);
 }
 
 function joinPath(base: string, path: string) {
@@ -420,7 +461,7 @@ function parseHeaders(headerStr: string) {
 	return headers;
 }
 
-export function usePreviewUrl(file: UploaderFileAtom) {
+export function usePreviewUrl(file: SelectedFile) {
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [status, setStatus] = useState<PreviewStatus>("idle");
@@ -431,7 +472,7 @@ export function usePreviewUrl(file: UploaderFileAtom) {
 	}, []);
 
 	useEffect(() => {
-		const f = store.get(file);
+		const f = filesStore.get(file);
 
 		if (!f.file) {
 			clearPreview();
@@ -487,9 +528,42 @@ export function usePreviewUrl(file: UploaderFileAtom) {
 	] as const;
 }
 
+function bufferToHex(buffer: ArrayBuffer) {
+	return Array.from(new Uint8Array(buffer))
+		.map((b) => b.toString(16).padStart(2, "0"))
+		.join("");
+}
+
+/**
+ * Get the SHA-256 hash of a file
+ * @param file - The file to hash
+ * @returns The SHA-256 hash of the file
+ */
+export async function hashFile(file: File) {
+	const buffer = await file.arrayBuffer();
+	const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+	return bufferToHex(hashBuffer);
+}
+
+/**
+ * Get the extension of a file
+ * @param file
+ * @returns The extension of the file
+ */
+export function extname(file: File) {
+	const name = file.name;
+	const lastDot = name.lastIndexOf(".");
+	if (lastDot <= 0 || lastDot === name.length - 1) return "";
+	return name.slice(lastDot).toLowerCase();
+}
+
 type PreviewStatus = "idle" | "loading" | "success" | "error";
 
 type UploadFileOptions = {
+	/**
+	 * The key that will be stored in the key/value store for the file.
+	 */
+	key?: Key;
 	/**
 	 * A function that is called when the upload is cancelled
 	 */
@@ -508,22 +582,7 @@ type UploadFileOptions = {
 	onError?: (err: unknown) => Promise<void> | void;
 };
 
-export type UploaderFilesAtomValue = {
-	/**
-	 * The ID used to create the atom with
-	 */
-	id: string;
-	/**
-	 * The files that have progressed through this atom in its lifetime
-	 */
-	files: PrimitiveAtom<UploaderFile>[];
-};
-
-export type UploaderFile = {
-	/**
-	 * A UUID for identifying the file
-	 */
-	id: string;
+export type SelectedFileData = {
 	/**
 	 * The source of the file as a string if the file is less than 15MB in size,
 	 * otherwise `null`. This is useful for generating previews.
@@ -569,19 +628,17 @@ export type UploaderFile = {
 	abortController: AbortController;
 };
 
-export type UploaderFileAtom = PrimitiveAtom<UploaderFile>;
-
-export type UploaderFileData = Pick<
-	UploaderFile,
-	"id" | "file" | "key" | "source"
->;
+export type SelectedFile = PrimitiveAtom<SelectedFileData>;
 
 export type SelectFilesCallback = (options?: {
 	/**
-	 * The base path to upload to on the server-side. The file's name will
-	 * be joined to this.
+	 * The key that will be stored in the key/value store for the file.
 	 */
-	key?: string | ((file: File) => string);
+	key?: Key;
 }) => void;
 
 export type SelectDirectoryCallback = SelectFilesCallback;
+
+export type OnSelect = (file: SelectedFile) => void | Promise<void>;
+
+export type Key = string | ((file: File) => string | Promise<string>);

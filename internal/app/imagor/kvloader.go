@@ -1,6 +1,7 @@
 package imagor
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -45,12 +46,13 @@ func NewKVStorage(kv *keyval.KeyVal, uploadPath string) *KVStorage {
 // Path transforms and validates image key for storage path
 func (s *KVStorage) Path(image string) (string, bool) {
 	key := []byte(image)
-	if !strings.HasPrefix(image, "/") {
-		key = append([]byte("/"), key...)
+	if strings.HasPrefix(image, "/") {
+		key = []byte(image[1:])
 	}
-	if !strings.HasPrefix(image, "files/") && !strings.HasPrefix(image, "/files/") {
+	if !bytes.HasPrefix(key, []byte("files/")) {
 		return "", false
 	}
+	key = bytes.TrimPrefix(key, []byte("files/"))
 	return filepath.Join(s.PathPrefix, keyval.KeyToPath(key)), true
 }
 

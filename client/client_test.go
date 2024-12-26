@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/subtle"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -175,7 +174,6 @@ func TestClient_Sign_Local(t *testing.T) {
 					t.Errorf("Failed to parse signed URL: %v", err)
 					return
 				}
-				fmt.Println(parsedURL.String())
 				// Check that the signature parameters are present
 				query := parsedURL.Query()
 				if query.Get("x-signature") == "" {

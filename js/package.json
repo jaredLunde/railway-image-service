@@ -6,7 +6,14 @@
 		"type": "git",
 		"url": "git+https://github.com/jaredLunde/railway-images.git"
 	},
-	"keywords": ["react", "railway", "railway", "template", "react", "image"],
+	"keywords": [
+		"react",
+		"railway",
+		"railway",
+		"template",
+		"react",
+		"image"
+	],
 	"author": "Jared Lunde",
 	"license": "MIT",
 	"bugs": {
@@ -18,29 +25,15 @@
 	"module": "dist/index.mjs",
 	"types": "dist/index.d.ts",
 	"exports": {
-		".": {
-			"import": "./dist/index.mjs",
-			"module": "./dist/index.mjs",
-			"types": "./dist/index.d.mts",
-			"default": "./dist/index.js"
-		},
-		"./server": {
-			"import": "./dist/server.mjs",
-			"module": "./dist/server.mjs",
-			"types": "./dist/server.d.ts",
-			"default": "./dist/server.js"
-		},
-		"./react": {
-			"import": "./dist/react.mjs",
-			"module": "./dist/react.mjs",
-			"types": "./dist/react.d.ts",
-			"default": "./dist/react.js"
-		},
 		"./*": {
-			"import": "./dist/*.mjs",
-			"module": "./dist/*.mjs",
-			"types": "./dist/*.d.ts",
-			"default": "./dist/*.js"
+			"import": {
+				"types": "./dist/*.d.mts",
+				"default": "./dist/*.mjs"
+			},
+			"default": {
+				"types": "./dist/*.d.ts",
+				"default": "./dist/*.js"
+			}
 		},
 		"./package.json": "./package.json"
 	},
@@ -48,6 +41,7 @@
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.0.2",
 		"jotai": "^2.11.0",
+		"next": "^15.1.2",
 		"react": "^19.0.0",
 		"tsup": "^8.3.5",
 		"typescript": "^5.7.2",
