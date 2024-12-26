@@ -207,7 +207,7 @@ export function Image({
 		// @ts-expect-error: it's fine
 		delete props["srcKey"];
 	} else {
-		segments.push(encodeURIComponent(props.src));
+		segments.push(`url/${encodeURIComponent(props.src)}`);
 	}
 
 	const baseUrl = typeof ctx.url === "string" ? ctx.url : ctx.url.get;
