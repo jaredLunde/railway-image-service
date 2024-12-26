@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { RailwayImagesClient } from "./server";
+import type { ImageServiceClient } from "./server";
 
-export function createHandler(client: RailwayImagesClient) {
+export function createHandler(client: ImageServiceClient) {
 	return {
 		async handler(req: NextApiRequest, res: NextApiResponse<unknown>) {
 			switch (req.method) {

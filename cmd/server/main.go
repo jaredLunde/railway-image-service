@@ -90,7 +90,6 @@ func main() {
 		WriteTimeout:      cfg.RequestTimeout,
 		ReadTimeout:       cfg.RequestTimeout,
 		StreamRequestBody: true,
-		ReduceMemoryUsage: true, // memory costs money brah, i'm a poor
 		JSONEncoder: func(v interface{}) ([]byte, error) {
 			return json.MarshalWithOption(v, json.DisableHTMLEscape())
 		},
