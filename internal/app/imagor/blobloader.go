@@ -17,8 +17,8 @@ import (
 
 var dotFileRegex = regexp.MustCompile(`/.`)
 
-// KVStorage File Storage implements imagor.Storage interface
-type KVStorage struct {
+// BlobStorage File Storage implements imagor.Storage interface
+type BlobStorage struct {
 	KV              *keyval.KeyVal
 	PathPrefix      string
 	Blacklists      []*regexp.Regexp
@@ -31,8 +31,8 @@ type KVStorage struct {
 }
 
 // New creates FileStorage
-func NewKVStorage(kv *keyval.KeyVal, uploadPath string) *KVStorage {
-	s := &KVStorage{
+func NewBlobStorage(kv *keyval.KeyVal, uploadPath string) *BlobStorage {
+	s := &BlobStorage{
 		KV:              kv,
 		Blacklists:      []*regexp.Regexp{dotFileRegex},
 		MkdirPermission: 0755,
@@ -44,7 +44,7 @@ func NewKVStorage(kv *keyval.KeyVal, uploadPath string) *KVStorage {
 }
 
 // Path transforms and validates image key for storage path
-func (s *KVStorage) Path(image string) (string, bool) {
+func (s *BlobStorage) Path(image string) (string, bool) {
 	key := []byte(image)
 	if strings.HasPrefix(image, "/") {
 		key = []byte(image[1:])
@@ -60,7 +60,7 @@ func (s *KVStorage) Path(image string) (string, bool) {
 }
 
 // Get implements imagor.Storage interface
-func (s *KVStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
+func (s *BlobStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return nil, imagor.ErrInvalid
@@ -72,7 +72,7 @@ func (s *KVStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
 }
 
 // Put implements imagor.Storage interface
-func (s *KVStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err error) {
+func (s *BlobStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return imagor.ErrInvalid
@@ -111,7 +111,7 @@ func (s *KVStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err
 }
 
 // Delete implements imagor.Storage interface
-func (s *KVStorage) Delete(_ context.Context, image string) error {
+func (s *BlobStorage) Delete(_ context.Context, image string) error {
 	image, ok := s.Path(image)
 	if !ok {
 		return imagor.ErrInvalid
@@ -120,7 +120,7 @@ func (s *KVStorage) Delete(_ context.Context, image string) error {
 }
 
 // Stat implements imagor.Storage interface
-func (s *KVStorage) Stat(_ context.Context, image string) (stat *imagor.Stat, err error) {
+func (s *BlobStorage) Stat(_ context.Context, image string) (stat *imagor.Stat, err error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return nil, imagor.ErrInvalid

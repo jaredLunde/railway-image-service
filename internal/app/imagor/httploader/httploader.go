@@ -200,9 +200,10 @@ func New(options ...Option) *HTTPLoader {
 
 // Get implements imagor.Loader interface
 func (h *HTTPLoader) Get(r *http.Request, image string) (*imagor.Blob, error) {
-	if strings.HasPrefix(image, "blob/") {
+	if !strings.HasPrefix(image, "url/") {
 		return nil, imagor.ErrNotFound
 	}
+	image = strings.TrimPrefix(image, "url/")
 	if image == "" {
 		return nil, imagor.ErrInvalid
 	}

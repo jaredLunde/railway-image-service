@@ -40,7 +40,7 @@ func New(ctx context.Context, cfg Config) (*i.Imagor, error) {
 	}
 
 	loaders := []i.Loader{
-		NewKVStorage(cfg.KeyVal, cfg.UploadPath),
+		NewBlobStorage(cfg.KeyVal, cfg.UploadPath),
 	}
 
 	if cfg.AllowedHTTPSources != "" {

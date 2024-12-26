@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { RailwayImagesClient, sign, signUrl } from "./server";
+import { ImageServiceClient, sign, signUrl } from "./server";
 
 describe("sign", () => {
 	it("signs a key with secret", () => {
@@ -39,15 +39,15 @@ describe("signUrl", () => {
 	});
 });
 
-describe("RailwayImagesClient", () => {
+describe("ImageServiceClient", () => {
 	it("constructor validates URL", () => {
-		expect(
-			() => new RailwayImagesClient({ url: "", secretKey: "key" }),
-		).toThrow("URL is required");
+		expect(() => new ImageServiceClient({ url: "", secretKey: "key" })).toThrow(
+			"URL is required",
+		);
 	});
 
 	it("signs URLs locally when signatureSecretKey provided", async () => {
-		const client = new RailwayImagesClient({
+		const client = new ImageServiceClient({
 			url: "http://example.com",
 			secretKey: "key",
 			signatureSecretKey: "signing-key",
@@ -58,7 +58,7 @@ describe("RailwayImagesClient", () => {
 	});
 
 	it("uses server signing when no signatureSecretKey", async () => {
-		const client = new RailwayImagesClient({
+		const client = new ImageServiceClient({
 			url: "http://example.com",
 			secretKey: "key",
 		});
@@ -78,7 +78,7 @@ describe("RailwayImagesClient", () => {
 	});
 
 	it("list constructs correct query params", async () => {
-		const client = new RailwayImagesClient({
+		const client = new ImageServiceClient({
 			url: "http://example.com",
 			secretKey: "key",
 		});

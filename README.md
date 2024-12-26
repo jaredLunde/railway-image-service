@@ -10,16 +10,16 @@ Upload, serve, and process images on Railway. Includes on-the-fly image resizing
 
 - [x] On-the-fly image processing (resize, crop, etc.) from any allowlisted domain or Railway volume
 - [x] Automatic AVIF/WebP conversion
-- [x] S3-ish key/value storage (PUT, GET, DELETE), protected by an API key
+- [x] S3-ish blob storage (PUT, GET, DELETE), protected by an API key
 - [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] Secure image URLs with signed paths and allowlist domains
 
 ## API
 
-### Key-value API
+### Blob storage API
 
-To access the key-value API, you must provide an `x-api-key` header with the value of the `SECRET_KEY` environment variable.
-Alternatively, you can use a signed URL to access the key-value API. The `/sign/` endpoint always requires the `x-api-key` header.
+To access the blob API, you must provide an `x-api-key` header with the value of the `SECRET_KEY` environment variable.
+Alternatively, you can use a signed URL to access the blob API. The `/sign/` endpoint always requires the `x-api-key` header.
 
 | Method   | Path              | Description                                        |
 | -------- | ----------------- | -------------------------------------------------- |
@@ -27,7 +27,7 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 | `GET`    | `/blob/:key`      | Get a file                                         |
 | `DELETE` | `/blob/:key`      | Delete a file                                      |
 | `GET`    | `/blob`           | List files with `limit`, `starting_at` parameters. |
-| `GET`    | `/sign/blob/:key` | Create a signed URL for a key value operation      |
+| `GET`    | `/sign/blob/:key` | Create a signed URL for a blob storage operation   |
 
 ### Image processing API
 
@@ -69,7 +69,7 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 
 ---
 
-## Key value API examples
+## Blob storage API examples
 
 ### Upload an image
 
@@ -84,10 +84,10 @@ curl -X PUT -T tmp/gopher.png http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
 
 # Upload the image
-curl -X PUT -T tmp/gopher.png "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
+curl -X PUT -T tmp/gopher.png "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
 ```
 
 ### Get an image
@@ -103,10 +103,10 @@ curl http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
 
 # Get the image
-curl "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
+curl "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
 ```
 
 ### Delete an image
@@ -122,10 +122,10 @@ curl -X DELETE http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
 
 # Delete the image
-curl -X DELETE "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
+curl -X DELETE "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
 ```
 
 ---
@@ -148,20 +148,20 @@ a comprehensive list of examples.
 # Create a signed URL
 curl http://localhost:3000/sign/serve/300x300/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/serve/300x300/blob/gopher.png?signature=...
+# => http://localhost:3000/serve/300x300/blob/gopher.png?x-signature=...
 
 # Process the image on the fly
-curl http://localhost:3000/serve/300x300/blob/gopher.png?signature=...
+curl http://localhost:3000/serve/300x300/blob/gopher.png?x-signature=...
 ```
 
 ### Crop and resize an image from a URL
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/serve/300x300/github.com/railwayapp.png \
+curl http://localhost:3000/sign/serve/300x300/url/github.com/railwayapp.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/serve/300x300/google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png?signature=...
+# => http://localhost:3000/serve/300x300/url/github.com/railwayapp.png?x-signature=...
 
 # Process the image on the fly
-curl http://localhost:3000/serve/300x300/github.com/railwayapp.png?signature=...
+curl http://localhost:3000/serve/300x300/url/github.com/railwayapp.png?x-signature=...
 ```
