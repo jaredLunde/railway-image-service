@@ -45,8 +45,8 @@ Alternatively, you can use a signed URL to access the blob API. The `/sign/` end
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | `MAX_UPLOAD_SIZE`            | The maximum size of an uploaded file in bytes                                                                                                                                       | `10485760` (10MB) |
 | `UPLOAD_PATH`                | The path to store uploaded files                                                                                                                                                    | `/data/uploads`   |
-| `LEVELDB_PATH`               | The path to store the key/value store                                                                                                                                               | `/data/db`        |
-| `SECRET_KEY`                 | The secret key used to for accessing the key/value API                                                                                                                              | `password`        |
+| `LEVELDB_PATH`               | The path to store the key/value database                                                                                                                                            | `/data/db`        |
+| `SECRET_KEY`                 | The secret key used to for accessing the blob storage API                                                                                                                           | `password`        |
 | `SIGNATURE_SECRET_KEY`       | The secret key used to sign URLs                                                                                                                                                    |                   |
 | `SERVE_ALLOWED_HTTP_SOURCES` | A comma-separated list of allowed URL sources for image processing, e.g. `*.foobar.com,my.foobar.com,mybucket.s3.amazonaws.com`. Set to an empty string to disable the HTTP loader. | `*`               |
 | `SERVE_AUTO_WEBP`            | Automatically convert images to WebP if compatible with the requester unless another format is specified.                                                                           | `true`            |
@@ -84,10 +84,10 @@ curl -X PUT -T tmp/gopher.png http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==...
 
 # Upload the image
-curl -X PUT -T tmp/gopher.png "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
+curl -X PUT -T tmp/gopher.png "http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==..."
 ```
 
 ### Get an image
@@ -103,10 +103,10 @@ curl http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==...
 
 # Get the image
-curl "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
+curl "http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==..."
 ```
 
 ### Delete an image
@@ -122,10 +122,10 @@ curl -X DELETE http://localhost:3000/blob/gopher.png \
 # Create a signed URL
 curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=...
+# => http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==...
 
 # Delete the image
-curl -X DELETE "http://localhost:3000/blob/gopher.png?x-signature=...?x-expires=..."
+curl -X DELETE "http://localhost:3000/blob/gopher.png?x-signature=...&x-expires==..."
 ```
 
 ---
