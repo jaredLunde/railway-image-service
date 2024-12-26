@@ -13,6 +13,7 @@ Upload, serve, and process images on Railway. Includes on-the-fly image resizing
 - [x] S3-ish blob storage (PUT, GET, DELETE), protected by an API key
 - [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] Secure image URLs with signed paths and allowlist domains
+- [x] [React components and Node.js SDK](js/README.md) for easy integration
 
 ## API
 
