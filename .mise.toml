@@ -14,8 +14,8 @@ node = "22"
 [tasks."setup"]
 description = "Setup the project"
 run = ["mise install", "go mod download", "go mod tidy", "cd js && npm install"]
-sources = ["go.mod", ".mise.toml", "*/**/*.go"]
-outputs = ["go.sum"]
+sources = ["go.mod", ".mise.toml", "*/**/*.go", "js/src/*.{ts,tsx}", "js/package.json"]
+outputs = ["go.sum", "js/package-lock.json"]
 
 [tasks."dev"]
 description = "Run the server and watch for changes"
