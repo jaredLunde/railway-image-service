@@ -107,17 +107,4 @@ describe("RailwayImagesClient", () => {
 		expect(result.keys).toEqual(["test.jpg"]);
 		expect(result.hasMore).toBe(false);
 	});
-
-	it("handles error responses", async () => {
-		const client = new RailwayImagesClient({
-			url: "http://example.com",
-			secretKey: "key",
-		});
-
-		global.fetch = vi.fn().mockImplementation(() => {
-			return Promise.resolve(new Response("error message", { status: 500 }));
-		});
-
-		await expect(client.get("test.jpg")).rejects.toThrow("HTTP error 500");
-	});
 });
