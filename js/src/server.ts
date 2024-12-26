@@ -112,8 +112,7 @@ export function sign(key: string, secret: string): string {
 export function signUrl(url: URL, secret: string): string {
 	const nextURI = new URL(url.toString());
 	const path = nextURI.pathname;
-	const p = path.replace(/^\/sign/, "");
-
+	const p = decodeURIComponent(path.replace(/^\/sign/, ""));
 	if (!p.startsWith("/files") && !p.startsWith("/serve")) {
 		throw new Error("invalid path");
 	}

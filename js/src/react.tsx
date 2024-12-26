@@ -18,14 +18,24 @@ import {
 	useState,
 } from "react";
 
-const RailwayImagesContext = createContext<RailwayImagesContextType>({});
+const RailwayImagesContext = createContext<RailwayImagesContextType>({
+	url: "",
+});
+
 type RailwayImagesContextType = {
 	maxUploadSize?: number;
-	endpoints?: {
-		get?: string;
-		put?: string;
-		sign?: string;
-	};
+	url:
+		| string
+		| {
+				/**
+				 * An API path or URL that can be used to create an image `src` attribute.
+				 */
+				get: string;
+				/**
+				 * An API path or URL that redirects to the signed URL for an image key.
+				 */
+				put: string;
+		  };
 };
 
 /**
@@ -44,17 +54,340 @@ export function Provider({
 	);
 }
 
-export function Image(props: ImageProps) {
+export function Image({
+	srcKey,
+	transform,
+	filters,
+	className,
+	alt = "",
+	...props
+}: ImageProps) {
 	const ctx = useContext(RailwayImagesContext);
+	const segments: string[] = [];
+
+	if (transform || props.width || props.height) {
+		// 2. Add trim if specified
+		if (transform?.trim) {
+			segments.push("trim");
+		}
+
+		// 3. Add manual crop coordinates if specified (AxB:CxD)
+		function add(a: number | string, b: number | string): number | string {
+			if (typeof a === "number" && typeof b === "number") {
+				return a + b;
+			}
+			// For percentages, return the sum as a string
+			return `${Number(String(a).replace("%", "")) + Number(String(b).replace("%", ""))}`;
+		}
+		if (transform?.crop) {
+			const { x, y, width, height } = transform.crop;
+			segments.push(`${x}x${y}:${add(x, width)}x${add(y, height)}`);
+		}
+
+		// 4 & 5. Add fit-in and stretch flags based on fit mode
+		if (props.fit === "contain" || props.fit === "contain-stretch") {
+			segments.push("fit-in");
+		}
+		if (props.fit === "stretch" || props.fit === "contain-stretch") {
+			segments.push("stretch");
+		}
+
+		// 6. Add dimensions with flip flags (-Ex-F)
+		if (props.width || props.height) {
+			const w = props.width
+				? `${transform?.flip === "horizontal" || transform?.flip === "both" ? "-" : ""}${props.width}`
+				: props.width;
+			const h = props.height
+				? `${transform?.flip === "vertical" || transform?.flip === "both" ? "-" : ""}${props.height}`
+				: props.height;
+			segments.push(`${w}x${h}`);
+		}
+
+		// 7. Add padding if specified (GxH:IxJ)
+		if (transform?.padding) {
+			const { left, top, right, bottom } = transform.padding;
+			segments.push(`${left}x${top}:${right}x${bottom}`);
+		}
+
+		// 8 & 9. Add alignment if any transformations are applied
+		if (
+			transform?.trim ||
+			transform?.crop ||
+			transform?.fit ||
+			transform?.padding ||
+			transform?.smart
+		) {
+			segments.push(transform?.align?.horizontal || "center");
+			segments.push(transform?.align?.vertical || "middle");
+		}
+
+		// 10. Add smart flag
+		if (transform?.smart) {
+			segments.push("smart");
+		}
+	}
+
+	// 11. Add filters if any
+	if (filters && Object.keys(filters).length > 0) {
+		segments.push(`filters:${buildFilterString(filters)}`);
+	}
+
+	// 12. Finally add the image key (encoded if it contains query params)
+	srcKey = `files/${srcKey}`;
+	const encodedKey = srcKey.includes("?") ? encodeURIComponent(srcKey) : srcKey;
+	segments.push(encodedKey);
+
+	// Construct final URL
+	const baseUrl = typeof ctx.url === "string" ? ctx.url : ctx.url.get;
+
+	return (
+		<img
+			src={joinPath(baseUrl, segments.join("/"))}
+			alt={alt}
+			className={className}
+			{...props}
+		/>
+	);
 }
 
-type ImageProps = {
+type Color = string; // Color name or hex without #
+type Percentage = number; // -100 to 100
+type Quality = number; // 0 to 100
+type Alpha = number; // 0 to 100
+type Angle = 0 | 90 | 180 | 270;
+type Position =
+	| number
+	| `${number}p`
+	| "left"
+	| "right"
+	| "center"
+	| "top"
+	| "bottom"
+	| "repeat";
+type ImageFormat = "jpeg" | "png" | "gif" | "webp" | "tiff" | "avif" | "jp2";
+
+/**
+ * All supported Thumbor filters and their configurations
+ */
+export type ImageFilters = {
+	// Image adjustments
+	background_color?: Color;
+	blur?: number;
+	brightness?: Percentage;
+	contrast?: Percentage;
+	fill?: Color | "blur" | "auto" | "none";
 	format?: ImageFormat;
-	size?: number | { width: number; height: number };
+	grayscale?: true;
+	hue?: number;
+	orient?: Angle;
+	proportion?: Percentage;
+	quality?: Quality;
+	rgb?: [number, number, number];
+	rotate?: Angle;
+	saturation?: Percentage;
+	sharpen?: number;
+
+	// Focal point
+	focal?: `${number}x${number}:${number}x${number}` | `${number},${number}`;
+
+	// Text and watermarks
+	label?: {
+		text: string;
+		x: Position;
+		y: Position;
+		size: number;
+		color: Color;
+		alpha?: Alpha;
+		font?: string;
+	};
+	watermark?: {
+		image: string;
+		x: Position;
+		y: Position;
+		alpha: Alpha;
+		w_ratio?: number;
+		h_ratio?: number;
+	};
+
+	// Shape modifications
+	round_corner?: {
+		rx: number;
+		ry?: number;
+		color?: Color;
+	};
+
+	// Size and frame limits
+	max_bytes?: number;
+	max_frames?: number;
+
+	// Document handling
+	page?: number;
+	dpi?: number;
+
+	// Metadata handling
+	strip_exif?: true;
+	strip_icc?: true;
+	strip_metadata?: true;
+
+	// Sizing behavior
+	upscale?: true;
+
+	// Utility filters
+	attachment?: string;
+	expire?: number;
+	preview?: true;
+	raw?: true;
 };
 
-type ImageFormat = "jpeg" | "png" | "webp" | "avif";
+function buildFilterString(filters: Partial<ImageFilters>): string {
+	const parts: string[] = [];
 
+	for (const [key, value] of Object.entries(filters)) {
+		if (value === undefined) continue;
+
+		switch (key) {
+			case "label":
+				const label = value as ImageFilters["label"];
+				if (!label) break;
+				parts.push(
+					`label(${[
+						encodeURIComponent(label.text),
+						label.x,
+						label.y,
+						label.size,
+						label.color,
+						label.alpha,
+						label.font,
+					]
+						.filter(Boolean)
+						.join(",")})`,
+				);
+				break;
+
+			case "watermark":
+				const watermark = value as ImageFilters["watermark"];
+				if (!watermark) break;
+				parts.push(
+					`watermark(${[
+						watermark.image,
+						watermark.x,
+						watermark.y,
+						watermark.alpha,
+						watermark.w_ratio,
+						watermark.h_ratio,
+					]
+						.filter(Boolean)
+						.join(",")})`,
+				);
+				break;
+
+			case "round_corner":
+				const corner = value as ImageFilters["round_corner"];
+				if (!corner) break;
+				parts.push(
+					`round_corner(${[corner.rx, corner.ry, corner.color]
+						.filter(Boolean)
+						.join(",")})`,
+				);
+				break;
+
+			case "rgb":
+				const [r, g, b] = value as [number, number, number];
+				parts.push(`rgb(${r},${g},${b})`);
+				break;
+
+			case "focal":
+				parts.push(`focal(${value})`);
+				break;
+
+			default:
+				if (value === true) {
+					parts.push(`${key}()`);
+				} else {
+					parts.push(`${key}(${value})`);
+				}
+		}
+	}
+
+	return parts.join(":");
+}
+
+/**
+ * Fit modes determine how the image fits within its target dimensions
+ */
+export type Fit =
+	| "cover" // Default - resize and crop to fill dimensions
+	| "contain" // Resize to fit within dimensions (fit-in)
+	| "stretch" // Stretch to fill dimensions ignoring aspect ratio
+	| "contain-stretch"; // Both fit-in and stretch flags
+
+/**
+ * Transform options for the image
+ */
+export type Transform = {
+	/**
+	 * Image flipping
+	 */
+	flip?: "horizontal" | "vertical" | "both";
+	/**
+	 * Manual crop region using pixels or percentages (0-1)
+	 */
+	crop?: {
+		x: number | string;
+		y: number | string;
+		width: number | string;
+		height: number | string;
+	};
+	/**
+	 * Padding to add (in pixels)
+	 */
+	padding?: {
+		left: number;
+		top: number;
+		right: number;
+		bottom: number;
+	};
+	/**
+	 * Remove surrounding space using top-left pixel color
+	 */
+	trim?: boolean;
+	/**
+	 * Use smart detection for focal points
+	 */
+	smart?: boolean;
+	/**
+	 * Position alignment
+	 */
+	align?: {
+		horizontal?: "left" | "center" | "right";
+		vertical?: "top" | "middle" | "bottom";
+	};
+};
+
+export type ImageProps = {
+	srcKey: string;
+	width?: number;
+	height?: number;
+	/**
+	 * How image should fit within target dimensions
+	 */
+	fit?: Fit;
+	/**
+	 * Apply image transformations
+	 */
+	transform?: Transform;
+	/**
+	 * Apply filters to the image
+	 */
+	filters?: Partial<ImageFilters>;
+} & Omit<
+	React.ImgHTMLAttributes<HTMLImageElement>,
+	"src" | "width" | "height" | "key"
+>;
+
+/**
+ * The MIME types for images. Can be used with `accept` in `useSelectFiles`.
+ */
 export const IMAGE_MIMES = "image/*";
 
 /**
@@ -98,17 +431,7 @@ export function useSelectFiles(
 			if (e.target instanceof HTMLInputElement) {
 				const target = e.target;
 
-				for (const fileIndex in target.files) {
-					const index = Number(fileIndex);
-					if (isNaN(index)) {
-						continue;
-					}
-
-					const file = target.files.item(index);
-					if (file === null) {
-						continue;
-					}
-
+				for (const file of target.files ?? []) {
 					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
 				}
 				// Remove event listener after operation
@@ -150,17 +473,7 @@ export function useSelectDirectory(
 			if (e.target instanceof HTMLInputElement) {
 				const target = e.target;
 
-				for (const fileIndex in target.files) {
-					const index = Number(fileIndex);
-					if (isNaN(index)) {
-						continue;
-					}
-					// Get file object
-					const file = target.files.item(index);
-					if (file === null) {
-						continue;
-					}
-
+				for (const file of target.files ?? []) {
 					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
 				}
 
@@ -186,12 +499,23 @@ export function useDropFiles(
 		 */
 		key?: Key;
 		/**
+		 * Sets or retrieves a comma-separated list of content types.
+		 */
+		accept?: string;
+		/**
+		 * If `false`, only one file can be dropped at a time
+		 */
+		multiple?: boolean;
+		/**
 		 * Called after files have been selected
 		 */
 		onSelect?: OnSelect;
 	} = {},
 ): {
 	props: React.HTMLAttributes<HTMLElement>;
+	/**
+	 * `true` if a user is currently dragging a file over the drop area
+	 */
 	isActive: boolean;
 } {
 	const [isActive, setIsOver] = useState(false);
@@ -216,9 +540,37 @@ export function useDropFiles(
 			async onDrop(e) {
 				e.preventDefault();
 				const key = storedOptions.current.key;
-
+				const accepts = storedOptions.current.accept
+					?.split(",")
+					.map((s) => s.trim());
 				for (const file of e.dataTransfer.files) {
+					let accepted = !accepts?.length; // true if no filters
+					if (file.type && accepts?.length) {
+						for (const accept of accepts) {
+							if (
+								// Handle exact mime types
+								file.type === accept ||
+								// Handle mime types with wildcards
+								(accept.includes("/*") &&
+									file.type.startsWith(accept.replace("/*", "/"))) ||
+								// Handle file extensions
+								(accept.startsWith(".") &&
+									file.name.toLowerCase().endsWith(accept.toLowerCase()))
+							) {
+								accepted = true;
+								break;
+							}
+						}
+					}
+
+					if (!accepted) {
+						continue;
+					}
+
 					storedOptions.current.onSelect?.(await createSelectedFile(file, key));
+					if (!storedOptions.current.multiple) {
+						break;
+					}
 				}
 
 				setIsOver(false);
@@ -227,12 +579,53 @@ export function useDropFiles(
 		[],
 	);
 
-	return useMemo(() => {
-		return {
-			props,
-			isActive,
-		};
-	}, [props, isActive]);
+	return { props, isActive };
+}
+
+/**
+ * A hook that creates a clickable dropzone for files. This is a convenience
+ * wrapper around `useSelectFiles` and `useDropFiles`.
+ */
+/**
+ * A hook that creates a clickable dropzone for files. This is a convenience
+ * wrapper around `useSelectFiles` and `useDropFiles`.
+ */
+export function useDropzone(options: {
+	/**
+	 * Sets or retrieves a comma-separated list of content types.
+	 */
+	accept?: string;
+	/**
+	 * Sets or retrieves the `Boolean` value indicating whether multiple items
+	 * can be selected from a list.
+	 */
+	multiple?: boolean;
+	/**
+	 * The key that will be stored in the key/value store for the file.
+	 */
+	key?: Key;
+	/**
+	 * Called after files have been selected
+	 */
+	onSelect?: OnSelect;
+}) {
+	const selectFiles = useSelectFiles(options);
+	const dropFiles = useDropFiles(options);
+	const props = useMemo<React.HTMLAttributes<HTMLElement>>(
+		() => ({
+			...dropFiles.props,
+			onClick(e) {
+				e.preventDefault();
+				selectFiles({ key: options.key });
+			},
+		}),
+		[dropFiles.props, selectFiles, options.key],
+	);
+
+	return {
+		props,
+		isActive: dropFiles.isActive,
+	};
 }
 
 async function createSelectedFile(file: File, key?: Key) {
@@ -250,6 +643,8 @@ async function createSelectedFile(file: File, key?: Key) {
 		progress: atom((get) => {
 			return get(bytesUploaded) / file.size;
 		}),
+		startTime: atom<number | null>(null),
+		progressSamples: atom<Array<ProgressSample>>([]),
 		status: atom<ExtractAtomValue<SelectedFileData["status"]>>("idle"),
 		abortController: new AbortController(),
 	});
@@ -261,28 +656,84 @@ async function createSelectedFile(file: File, key?: Key) {
  * @param atom - A file atom
  */
 export function useFileStatus(
-	atom: SelectedFile,
+	selectedFile: SelectedFile,
 ): ExtractAtomValue<SelectedFileData["status"]> {
-	return useAtomValue(useAtomValue(atom, { store: filesStore }).status, {
-		store: filesStore,
-	});
+	return useAtomValue(
+		useAtomValue(selectedFile, { store: filesStore }).status,
+		{
+			store: filesStore,
+		},
+	);
 }
 
 /**
- * A hook that returns the upload progress from a file atom if bytes uploaded
- * has been set by you.
+ * Calculate progress information from upload state
+ */
+function calculateProgress(
+	loaded: number,
+	total: number,
+	startTime: number | null,
+	samples: Array<ProgressSample> = [],
+): ProgressData {
+	const now = Date.now();
+	const timeElapsed = now - (startTime ?? now);
+	let rate = 0;
+	if (samples.length > 1) {
+		const oldest = samples[0];
+		const timeDiff = (now - oldest.time) / 1000; // to seconds
+		const bytesDiff = loaded - oldest.loaded;
+		rate = bytesDiff / timeDiff;
+	}
+	const estimatedTimeRemaining =
+		rate > 0
+			? ((total - loaded) / rate) * 1000 // to ms
+			: null;
+	const progress = loaded / total;
+	return {
+		loaded,
+		total,
+		progress,
+		rate,
+		estimatedTimeRemaining: progress === 1 ? 0 : estimatedTimeRemaining,
+		timeElapsed,
+	};
+}
+
+/**
+ * A hook that returns detailed progress information for a file upload. This includes
+ * the upload speed, estimated time remaining, and other upload statistics.
  *
- * @param atom - A file atom
+ * @param selectedFile - A file atom created by `createSelectedFile`
+ * @returns Progress information including:
+ *  - `loaded` - Number of bytes uploaded
+ *  - `total` - Total file size in bytes
+ *  - `progress` - Upload progress as a fraction between 0-1
+ *  - `rate` - Upload speed in bytes per second
+ *  - `estimatedTimeRemaining` - Estimated milliseconds until completion, or null if not started
+ *  - `timeElapsed` - Milliseconds since upload started
+ *
  * @example
  * ```tsx
  * const progress = useProgress(selectedFile);
- * return <span>{progress * 100}% uploaded</span>
+ * return (
+ *   <div>
+ *     {Math.round(progress.progress * 100)}% uploaded
+ *     ({formatBytes(progress.rate)}/s)
+ *     {progress.estimatedTimeRemaining &&
+ *       `${formatTime(progress.estimatedTimeRemaining)} remaining`
+ *     }
+ *   </div>
+ * );
  * ```
  */
-export function useProgress(atom: SelectedFile): number {
-	return useAtomValue(useAtomValue(atom, { store: filesStore }).progress, {
-		store: filesStore,
-	});
+export function useProgress(selectedFile: SelectedFile): ProgressData {
+	const file = useAtomValue(selectedFile, { store: filesStore });
+	const bytesUploaded = useAtomValue(file.bytesUploaded, { store: filesStore });
+	const startTime = useAtomValue(file.startTime, { store: filesStore });
+	const samples = useAtomValue(file.progressSamples, { store: filesStore });
+	return useMemo(() => {
+		return calculateProgress(bytesUploaded, file.file.size, startTime, samples);
+	}, [bytesUploaded, file.file.size, startTime, samples]);
 }
 
 /**
@@ -350,14 +801,33 @@ export function useUploadFile() {
 			try {
 				response = await new Promise((resolve, reject) => {
 					const xhr = new XMLHttpRequest();
+					xhr.withCredentials = options.withCredentials ?? false;
+					for (const key in options.headers ?? {}) {
+						xhr.setRequestHeader(key, options.headers![key]);
+					}
 					abortSignal.addEventListener("abort", () => {
 						xhr.abort();
 						reject(new DOMException("Aborted", "AbortError"));
 					});
+					set(f.startTime, Date.now());
+					set(uploadingFile.progressSamples, []);
 					xhr.upload.addEventListener("progress", (e) => {
 						if (e.lengthComputable) {
 							set(f.bytesUploaded, e.loaded);
-							onProgress?.(get(f.progress));
+							set(f.progressSamples, (current) => {
+								return [
+									...current,
+									{ time: Date.now(), loaded: e.loaded },
+								].slice(-10);
+							});
+							onProgress?.(
+								calculateProgress(
+									e.loaded,
+									e.total,
+									get(f.startTime),
+									get(f.progressSamples),
+								),
+							);
 						}
 					});
 					xhr.addEventListener("load", () => {
@@ -372,7 +842,10 @@ export function useUploadFile() {
 					xhr.addEventListener("error", () =>
 						reject(new Error("Upload failed")),
 					);
-					xhr.open("PUT", joinPath(ctx.endpoints?.put ?? "", key));
+					xhr.open(
+						"PUT",
+						joinPath(typeof ctx.url === "string" ? ctx.url : ctx.url.put, key),
+					);
 					xhr.send(f.file);
 				});
 
@@ -404,7 +877,55 @@ export function useUploadFile() {
 				onSuccess?.(response!);
 			}
 		},
-		[ctx.maxUploadSize, ctx.endpoints?.put, ctx.endpoints?.sign],
+		[ctx.maxUploadSize, ctx.url],
+	);
+}
+
+/**
+ * A hook that returns a function for uploading multiple files concurrently
+ * with a configurable concurrency limit.
+ *
+ * @example
+ * ```tsx
+ * const uploadFiles = useUploadFiles();
+ *
+ * // Later...
+ * await uploadFiles([file1, file2], {
+ *   concurrency: 2,
+ *   onProgress: (p) => console.log(`${p * 100}%`)
+ * });
+ * ```
+ */
+export function useUploadFiles() {
+	const upload = useUploadFile();
+
+	return useCallback(
+		async function uploadFiles(
+			selectedFiles: Array<SelectedFile>,
+			options: {
+				/**
+				 * Maximum number of concurrent uploads
+				 * @default 3
+				 */
+				concurrency?: number;
+			} & UploadFileOptions = {},
+		) {
+			const concurrency = options.concurrency ?? 3;
+			const chunks = selectedFiles.reduce<Array<SelectedFile[]>>(
+				(acc, file, i) => {
+					const chunkIndex = Math.floor(i / concurrency);
+					if (!acc[chunkIndex]) acc[chunkIndex] = [];
+					acc[chunkIndex].push(file);
+					return acc;
+				},
+				[],
+			);
+
+			for (const chunk of chunks) {
+				await Promise.all(chunk.map((file) => upload(file, options)));
+			}
+		},
+		[upload],
 	);
 }
 
@@ -412,10 +933,10 @@ export function useUploadFile() {
  * A hook that returns a callback for cancelling a file upload if
  * possible.
  *
- * @param atom - A file atom
+ * @param selectedFile - A selected file
  */
-export function useCancelUploadFile(atom: SelectedFile): () => void {
-	const file = useAtomValue(atom, { store: filesStore });
+export function useCancelUploadFile(selectedFile: SelectedFile): () => void {
+	const file = useAtomValue(selectedFile, { store: filesStore });
 	const setStatus = useSetAtom(file.status, { store: filesStore });
 	return useCallback(() => {
 		file.abortController.abort();
@@ -461,14 +982,34 @@ function parseHeaders(headerStr: string) {
 	return headers;
 }
 
+/**
+ * A hook that generates a preview URL for an image file. Returns a tuple containing
+ * the preview URL and metadata about the preview state.
+ *
+ * @param file - A file atom created by `createSelectedFile`
+ * @returns A tuple containing:
+ *  - The preview URL as a string, or null if not available
+ *  - An object containing:
+ *    - `error`: Error message if preview generation failed, null otherwise
+ *    - `status`: Current status of the preview ("idle" | "loading" | "success" | "error")
+ *    - `clear`: Function to clear the preview state
+ *
+ * @example
+ * ```tsx
+ * const [previewUrl, { status, error }] = usePreviewUrl(selectedFile);
+ * return (
+ *   <div>
+ *     {status === 'loading' && <Spinner />}
+ *     {status === 'error' && <Error>{error}</Error>}
+ *     {status === 'success' && <img src={previewUrl} alt="Preview" />}
+ *   </div>
+ * );
+ * ```
+ */
 export function usePreviewUrl(file: SelectedFile) {
-	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
-	const [status, setStatus] = useState<PreviewStatus>("idle");
+	const [state, setState] = useState<PreviewState>(initialPreviewState);
 	const clearPreview = useCallback(() => {
-		setPreviewUrl(null);
-		setError(null);
-		setStatus("idle");
+		setState(initialPreviewState);
 	}, []);
 
 	useEffect(() => {
@@ -479,14 +1020,15 @@ export function usePreviewUrl(file: SelectedFile) {
 			return;
 		}
 
-		setStatus("loading");
-		setError(null);
+		setState((prev) => ({ ...prev, status: "loading", error: null }));
 
 		// Validate file type
 		if (!f.file.type.startsWith("image/")) {
-			setError("Selected file is not an image");
-			setPreviewUrl(null);
-			setStatus("error");
+			setState({
+				url: null,
+				error: "Selected file is not an image",
+				status: "error",
+			});
 			return;
 		}
 
@@ -497,16 +1039,12 @@ export function usePreviewUrl(file: SelectedFile) {
 				e.target instanceof FileReader &&
 				typeof e.target.result === "string"
 			) {
-				setPreviewUrl(e.target.result);
-				setError(null);
-				setStatus("success");
+				setState({ url: e.target.result, error: null, status: "success" });
 			}
 		};
 
 		reader.onerror = () => {
-			setError("Error reading file");
-			setPreviewUrl(null);
-			setStatus("error");
+			setState({ url: null, error: "Error reading file", status: "error" });
 		};
 
 		reader.readAsDataURL(f.file);
@@ -516,17 +1054,37 @@ export function usePreviewUrl(file: SelectedFile) {
 		};
 	}, [file, clearPreview]);
 
+	useEffect(() => {
+		return () => {
+			if (state.url?.startsWith("blob:")) {
+				URL.revokeObjectURL(state.url);
+			}
+		};
+	}, [state.url]);
+
 	return [
-		previewUrl,
+		state.url,
 		useMemo(() => {
 			return {
-				error,
-				status,
+				error: state.error,
+				status: state.status,
 				clear: clearPreview,
 			};
-		}, [error, status, clearPreview]),
+		}, [state.error, state.status, clearPreview]),
 	] as const;
 }
+
+const initialPreviewState: PreviewState = {
+	url: null,
+	error: null,
+	status: "idle",
+};
+type PreviewState = {
+	url: string | null;
+	error: string | null;
+	status: PreviewStatus;
+};
+type PreviewStatus = "idle" | "loading" | "success" | "error";
 
 function bufferToHex(buffer: ArrayBuffer) {
 	return Array.from(new Uint8Array(buffer))
@@ -551,19 +1109,27 @@ export async function hashFile(file: File) {
  * @returns The extension of the file
  */
 export function extname(file: File) {
-	const name = file.name;
+	if (!file?.name) return "";
+	const name = file.name.trim();
 	const lastDot = name.lastIndexOf(".");
+	// Handle dotfiles and empty extensions
 	if (lastDot <= 0 || lastDot === name.length - 1) return "";
 	return name.slice(lastDot).toLowerCase();
 }
-
-type PreviewStatus = "idle" | "loading" | "success" | "error";
 
 type UploadFileOptions = {
 	/**
 	 * The key that will be stored in the key/value store for the file.
 	 */
 	key?: Key;
+	/**
+	 * Additional headers to send with the upload request
+	 */
+	headers?: Record<string, string>;
+	/**
+	 * Whether or not to send cookies with the upload request
+	 */
+	withCredentials?: boolean;
 	/**
 	 * A function that is called when the upload is cancelled
 	 */
@@ -575,11 +1141,38 @@ type UploadFileOptions = {
 	/**
 	 * Called when there is a progress event
 	 */
-	onProgress?: (progress: number) => Promise<void> | void;
+	onProgress?: (progress: ProgressData) => Promise<void> | void;
 	/**
 	 * Called when there was an error uploading
 	 */
 	onError?: (err: unknown) => Promise<void> | void;
+};
+
+export type ProgressData = {
+	/**
+	 * Bytes uploaded so far
+	 */
+	loaded: number;
+	/**
+	 * Total bytes to upload
+	 */
+	total: number;
+	/**
+	 * Progress as a fraction between 0 and 1
+	 */
+	progress: number;
+	/**
+	 * Upload speed in bytes per second
+	 */
+	rate: number;
+	/**
+	 * Estimated time remaining in milliseconds
+	 */
+	estimatedTimeRemaining: number | null;
+	/**
+	 * Time elapsed since upload started in milliseconds
+	 */
+	timeElapsed: number;
 };
 
 export type SelectedFileData = {
@@ -619,6 +1212,14 @@ export type SelectedFileData = {
 		"idle" | "queued" | "uploading" | "cancelled" | "success" | "error"
 	>;
 	/**
+	 * Timestamp when the upload started
+	 */
+	startTime: PrimitiveAtom<number | null>;
+	/**
+	 * Array of recent progress samples
+	 */
+	progressSamples: PrimitiveAtom<Array<ProgressSample>>;
+	/**
 	 * An error message if the status is in an error state
 	 */
 	error?: string;
@@ -642,3 +1243,5 @@ export type SelectDirectoryCallback = SelectFilesCallback;
 export type OnSelect = (file: SelectedFile) => void | Promise<void>;
 
 export type Key = string | ((file: File) => string | Promise<string>);
+
+export type ProgressSample = { time: number; loaded: number };
