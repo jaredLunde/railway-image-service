@@ -1,4 +1,4 @@
-module github.com/jaredLunde/railway-images
+module github.com/jaredLunde/railway-image-service
 
 go 1.23.1
 

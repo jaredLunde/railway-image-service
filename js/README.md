@@ -3,5 +3,5 @@
 ## Quick start
 
 ```sh
-npm install jotai railway-images
+npm install jotai railway-image-service
 ```

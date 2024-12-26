@@ -25,10 +25,10 @@ describe("signUrl", () => {
 	});
 
 	it("signs files URL with expiration", () => {
-		const url = new URL("http://example.com/files/test.jpg");
+		const url = new URL("http://example.com/blob/test.jpg");
 		const signed = signUrl(url, "secret");
 		const parsed = new URL(signed);
-		expect(parsed.pathname).toBe("/files/test.jpg");
+		expect(parsed.pathname).toBe("/blob/test.jpg");
 		expect(parsed.searchParams.get("x-signature")).toBeTruthy();
 		expect(parsed.searchParams.get("x-expire")).toBeTruthy();
 	});
@@ -53,7 +53,7 @@ describe("RailwayImagesClient", () => {
 			signatureSecretKey: "signing-key",
 		});
 
-		const signed = await client.sign("/files/test.jpg");
+		const signed = await client.sign("/blob/test.jpg");
 		expect(signed).toContain("x-signature=");
 	});
 

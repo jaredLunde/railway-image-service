@@ -124,7 +124,7 @@ func TestClient_Sign_Local(t *testing.T) {
 	}{
 		{
 			name:               "successful local signing",
-			path:               "/files/test.jpg",
+			path:               "/blob/test.jpg",
 			signatureSecretKey: "secret",
 			wantErr:            false,
 		},
@@ -136,7 +136,7 @@ func TestClient_Sign_Local(t *testing.T) {
 		},
 		{
 			name:               "path with query params",
-			path:               "/serve/files/test.jpg",
+			path:               "/serve/blob/test.jpg",
 			signatureSecretKey: "secret",
 			wantErr:            false,
 		},
@@ -179,7 +179,7 @@ func TestClient_Sign_Local(t *testing.T) {
 				if query.Get("x-signature") == "" {
 					t.Error("Signed URL missing x-signature parameter")
 				}
-				if query.Get("x-expire") == "" && strings.HasPrefix(tt.path, "/files") {
+				if query.Get("x-expire") == "" && strings.HasPrefix(tt.path, "/blob") {
 					t.Error("Signed URL missing x-expire parameter")
 				}
 
@@ -199,8 +199,8 @@ func TestClient_Get(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET request, got %s", r.Method)
 		}
-		if r.URL.Path != "/files/test.jpg" {
-			t.Errorf("expected path /files/test.jpg, got %s", r.URL.Path)
+		if r.URL.Path != "/blob/test.jpg" {
+			t.Errorf("expected path /blob/test.jpg, got %s", r.URL.Path)
 		}
 		w.Write(expectedContent)
 	}))
@@ -388,8 +388,8 @@ func TestClient_Delete(t *testing.T) {
 		if r.Method != http.MethodDelete {
 			t.Errorf("expected DELETE request, got %s", r.Method)
 		}
-		if r.URL.Path != "/files/test.jpg" {
-			t.Errorf("expected path /files/test.jpg, got %s", r.URL.Path)
+		if r.URL.Path != "/blob/test.jpg" {
+			t.Errorf("expected path /blob/test.jpg, got %s", r.URL.Path)
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -417,8 +417,8 @@ func TestClient_List(t *testing.T) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET request, got %s", r.Method)
 		}
-		if r.URL.Path != "/files" {
-			t.Errorf("expected path /files, got %s", r.URL.Path)
+		if r.URL.Path != "/blob" {
+			t.Errorf("expected path /blob, got %s", r.URL.Path)
 		}
 
 		q := r.URL.Query()

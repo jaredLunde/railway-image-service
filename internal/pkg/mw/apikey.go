@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jaredLunde/railway-images/client/sign"
+	"github.com/jaredLunde/railway-image-service/client/sign"
 )
 
 func NewVerifyAPIKey(secretKey string) func(c fiber.Ctx) error {

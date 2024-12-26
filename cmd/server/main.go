@@ -21,11 +21,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
-	"github.com/jaredLunde/railway-images/internal/app/imagor"
-	"github.com/jaredLunde/railway-images/internal/app/keyval"
-	"github.com/jaredLunde/railway-images/internal/app/signature"
-	"github.com/jaredLunde/railway-images/internal/pkg/logger"
-	"github.com/jaredLunde/railway-images/internal/pkg/mw"
+	"github.com/jaredLunde/railway-image-service/internal/app/imagor"
+	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
+	"github.com/jaredLunde/railway-image-service/internal/app/signature"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/logger"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/mw"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -46,7 +46,7 @@ func main() {
 	})
 
 	kvService, err := keyval.New(keyval.Config{
-		BasePath:         "/files",
+		BasePath:         "/blob",
 		UploadPath:       cfg.UploadPath,
 		LevelDBPath:      cfg.LevelDBPath,
 		SoftDelete:       true,
@@ -140,10 +140,10 @@ func main() {
 		r.URL.RawQuery = q.Encode()
 		imagorService.ServeHTTP(w, r)
 	})))
-	app.Get("/files", kvService.ServeHTTP, verifyAccess)
-	app.Get("/files/*", kvService.ServeHTTP, verifyAccess)
-	app.Put("/files/*", kvService.ServeHTTP, verifyAccess)
-	app.Delete("/files/*", kvService.ServeHTTP, verifyAccess)
+	app.Get("/blob", kvService.ServeHTTP, verifyAccess)
+	app.Get("/blob/*", kvService.ServeHTTP, verifyAccess)
+	app.Put("/blob/*", kvService.ServeHTTP, verifyAccess)
+	app.Delete("/blob/*", kvService.ServeHTTP, verifyAccess)
 	app.Get("/sign/*", signatureService.ServeHTTP, verifyAPIKey)
 
 	g := errgroup.Group{}

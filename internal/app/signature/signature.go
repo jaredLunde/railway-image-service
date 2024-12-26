@@ -4,7 +4,7 @@ import (
 	"net/url"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/jaredLunde/railway-images/client/sign"
+	"github.com/jaredLunde/railway-image-service/client/sign"
 )
 
 func New(secret string) *Signature {

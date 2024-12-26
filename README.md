@@ -21,13 +21,13 @@ Upload, serve, and process images on Railway. Includes on-the-fly image resizing
 To access the key-value API, you must provide an `x-api-key` header with the value of the `SECRET_KEY` environment variable.
 Alternatively, you can use a signed URL to access the key-value API. The `/sign/` endpoint always requires the `x-api-key` header.
 
-| Method   | Path               | Description                                        |
-| -------- | ------------------ | -------------------------------------------------- |
-| `PUT`    | `/files/:key`      | Upload a file                                      |
-| `GET`    | `/files/:key`      | Get a file                                         |
-| `DELETE` | `/files/:key`      | Delete a file                                      |
-| `GET`    | `/files`           | List files with `limit`, `starting_at` parameters. |
-| `GET`    | `/sign/files/:key` | Create a signed URL for a key value operation      |
+| Method   | Path              | Description                                        |
+| -------- | ----------------- | -------------------------------------------------- |
+| `PUT`    | `/blob/:key`      | Upload a file                                      |
+| `GET`    | `/blob/:key`      | Get a file                                         |
+| `DELETE` | `/blob/:key`      | Delete a file                                      |
+| `GET`    | `/blob`           | List files with `limit`, `starting_at` parameters. |
+| `GET`    | `/sign/blob/:key` | Create a signed URL for a key value operation      |
 
 ### Image processing API
 
@@ -74,7 +74,7 @@ Alternatively, you can use a signed URL to access the key-value API. The `/sign/
 ### Upload an image
 
 ```bash
-curl -X PUT -T tmp/gopher.png http://localhost:3000/files/gopher.png \
+curl -X PUT -T tmp/gopher.png http://localhost:3000/blob/gopher.png \
   -H "x-api-key: $API_KEY"
 ```
 
@@ -82,18 +82,18 @@ curl -X PUT -T tmp/gopher.png http://localhost:3000/files/gopher.png \
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/files/gopher.png \
+curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/files/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
 
 # Upload the image
-curl -X PUT -T tmp/gopher.png "http://localhost:3000/files/gopher.png?signature=...&expires=..."
+curl -X PUT -T tmp/gopher.png "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
 ```
 
 ### Get an image
 
 ```bash
-curl http://localhost:3000/files/gopher.png \
+curl http://localhost:3000/blob/gopher.png \
   -H "x-api-key: $API_KEY"
 ```
 
@@ -101,18 +101,18 @@ curl http://localhost:3000/files/gopher.png \
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/files/gopher.png \
+curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/files/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
 
 # Get the image
-curl "http://localhost:3000/files/gopher.png?signature=...&expires=..."
+curl "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
 ```
 
 ### Delete an image
 
 ```bash
-curl -X DELETE http://localhost:3000/files/gopher.png \
+curl -X DELETE http://localhost:3000/blob/gopher.png \
   -H "x-api-key: $API_KEY"
 ```
 
@@ -120,12 +120,12 @@ curl -X DELETE http://localhost:3000/files/gopher.png \
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/files/gopher.png \
+curl http://localhost:3000/sign/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/files/gopher.png?signature=...&expires=...
+# => http://localhost:3000/blob/gopher.png?signature=...&expires=...
 
 # Delete the image
-curl -X DELETE "http://localhost:3000/files/gopher.png?signature=...&expires=..."
+curl -X DELETE "http://localhost:3000/blob/gopher.png?signature=...&expires=..."
 ```
 
 ---
@@ -146,12 +146,12 @@ a comprehensive list of examples.
 
 ```bash
 # Create a signed URL
-curl http://localhost:3000/sign/serve/300x300/files/gopher.png \
+curl http://localhost:3000/sign/serve/300x300/blob/gopher.png \
   -H "x-api-key: $API_KEY"
-# => http://localhost:3000/serve/300x300/files/gopher.png?signature=...
+# => http://localhost:3000/serve/300x300/blob/gopher.png?signature=...
 
 # Process the image on the fly
-curl http://localhost:3000/serve/300x300/files/gopher.png?signature=...
+curl http://localhost:3000/serve/300x300/blob/gopher.png?signature=...
 ```
 
 ### Crop and resize an image from a URL

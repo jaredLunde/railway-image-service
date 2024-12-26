@@ -200,7 +200,7 @@ func New(options ...Option) *HTTPLoader {
 
 // Get implements imagor.Loader interface
 func (h *HTTPLoader) Get(r *http.Request, image string) (*imagor.Blob, error) {
-	if strings.HasPrefix(image, "files/") {
+	if strings.HasPrefix(image, "blob/") {
 		return nil, imagor.ErrNotFound
 	}
 	if image == "" {

@@ -1,25 +1,18 @@
 {
-	"name": "railway-images",
+	"name": "railway-image-service",
 	"version": "0.1.0",
-	"description": "JavaScript and React packages for the railway-images template",
+	"description": "JavaScript and React packages for the railway-image-service template",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/jaredLunde/railway-images.git"
+		"url": "git+https://github.com/jaredLunde/railway-image-service.git"
 	},
-	"keywords": [
-		"react",
-		"railway",
-		"railway",
-		"template",
-		"react",
-		"image"
-	],
+	"keywords": ["react", "railway", "railway", "template", "react", "image"],
 	"author": "Jared Lunde",
 	"license": "MIT",
 	"bugs": {
-		"url": "https://github.com/jaredLunde/railway-images/issues"
+		"url": "https://github.com/jaredLunde/railway-image-service/issues"
 	},
-	"homepage": "https://github.com/jaredLunde/railway-images#readme",
+	"homepage": "https://github.com/jaredLunde/railway-image-service#readme",
 	"sideEffects": false,
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
@@ -37,9 +30,7 @@
 		},
 		"./package.json": "./package.json"
 	},
-	"files": [
-		"/dist"
-	],
+	"files": ["/dist"],
 	"devDependencies": {
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.0.2",

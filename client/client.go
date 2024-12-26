@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/jaredLunde/railway-images/client/sign"
+	"github.com/jaredLunde/railway-image-service/client/sign"
 )
 
 type Options struct {
@@ -100,7 +100,7 @@ func (c *Client) Sign(path string) (string, error) {
 // Get a file from the storage server
 func (c *Client) Get(key string) (*http.Response, error) {
 	u := *c.URL
-	path, err := url.JoinPath("/files", key)
+	path, err := url.JoinPath("/blob", key)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func (c *Client) Get(key string) (*http.Response, error) {
 func (c *Client) Put(key string, r io.Reader) error {
 	// Create URL
 	u := *c.URL
-	u.Path = fmt.Sprintf("/files/%s", key)
+	u.Path = fmt.Sprintf("/blob/%s", key)
 
 	// Create request
 	req, err := http.NewRequest(http.MethodPut, u.String(), r)
@@ -157,7 +157,7 @@ func (c *Client) Put(key string, r io.Reader) error {
 // Delete a file from the storage server
 func (c *Client) Delete(key string) error {
 	u := *c.URL
-	path, err := url.JoinPath("/files", key)
+	path, err := url.JoinPath("/blob", key)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ type ListOptions struct {
 // List files in the storage server
 func (c *Client) List(opts ListOptions) (*ListResult, error) {
 	u := *c.URL
-	u.Path = "/files"
+	u.Path = "/blob"
 
 	// Build query parameters
 	q := u.Query()

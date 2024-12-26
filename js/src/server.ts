@@ -45,7 +45,7 @@ export class ImageServiceClient {
 	}
 
 	async get(key: string): Promise<Response> {
-		const response = await this.fetch(`/files/${key}`);
+		const response = await this.fetch(`/blob/${key}`);
 		if (response.status !== 200) {
 			throw new Error(`${response.status}: ${response.statusText}`);
 		}
@@ -56,14 +56,14 @@ export class ImageServiceClient {
 		key: string,
 		content: ReadableStream | Buffer | ArrayBuffer,
 	): Promise<Response> {
-		return this.fetch(`/files/${key}`, {
+		return this.fetch(`/blob/${key}`, {
 			method: "PUT",
 			body: content,
 		});
 	}
 
 	async delete(key: string): Promise<Response> {
-		return this.fetch(`/files/${key}`, { method: "DELETE" });
+		return this.fetch(`/blob/${key}`, { method: "DELETE" });
 	}
 
 	async list(options: ListOptions = {}): Promise<ListResult> {
@@ -82,7 +82,7 @@ export class ImageServiceClient {
 			params.set("unlinked", "true");
 		}
 
-		const response = await this.fetch(`/files?${params.toString()}`);
+		const response = await this.fetch(`/blob?${params.toString()}`);
 		return response.json();
 	}
 }
@@ -118,7 +118,7 @@ export function signUrl(url: URL, secret: string): string {
 	const nextURI = new URL(url.toString());
 	const path = nextURI.pathname;
 	const p = decodeURIComponent(path.replace(/^\/sign/, ""));
-	if (!p.startsWith("/files") && !p.startsWith("/serve")) {
+	if (!p.startsWith("/blob") && !p.startsWith("/serve")) {
 		throw new Error("invalid path");
 	}
 
@@ -129,7 +129,7 @@ export function signUrl(url: URL, secret: string): string {
 		signature = sign(p.replace(/^\/serve/, ""), secret);
 	}
 
-	if (p.startsWith("/files")) {
+	if (p.startsWith("/blob")) {
 		const expireAt = Date.now() + 60 * 60 * 1000; // 1 hour in milliseconds
 		query.set("x-expire", expireAt.toString());
 		nextURI.search = query.toString();

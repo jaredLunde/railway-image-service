@@ -13,8 +13,8 @@ import (
 	"github.com/cshum/imagor/imagorpath"
 	"github.com/cshum/imagor/storage/filestorage"
 	"github.com/cshum/imagor/vips"
-	"github.com/jaredLunde/railway-images/internal/app/imagor/httploader"
-	"github.com/jaredLunde/railway-images/internal/app/keyval"
+	"github.com/jaredLunde/railway-image-service/internal/app/imagor/httploader"
+	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
 )
 
 type Config struct {

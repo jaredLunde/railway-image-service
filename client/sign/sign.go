@@ -24,7 +24,7 @@ func SignURL(url *url.URL, secret string) (*string, error) {
 	path := nextURI.Path
 	p := strings.TrimPrefix(path, "/sign")
 	var signature string
-	if !strings.HasPrefix(p, "/files") && !strings.HasPrefix(p, "/serve") {
+	if !strings.HasPrefix(p, "/blob") && !strings.HasPrefix(p, "/serve") {
 		return nil, fmt.Errorf("invalid path")
 	}
 	if strings.HasPrefix(p, "/serve") {
@@ -32,7 +32,7 @@ func SignURL(url *url.URL, secret string) (*string, error) {
 	}
 
 	query := nextURI.Query()
-	if strings.HasPrefix(p, "/files") {
+	if strings.HasPrefix(p, "/blob") {
 		expireAt := time.Now().Add(time.Hour).UnixMilli()
 		query.Set("x-expire", fmt.Sprintf("%d", expireAt))
 		nextURI.RawQuery = query.Encode()

@@ -13,8 +13,8 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
-	"github.com/jaredLunde/railway-images/client/sign"
-	"github.com/jaredLunde/railway-images/internal/pkg/ptr"
+	"github.com/jaredLunde/railway-image-service/client/sign"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/ptr"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/valyala/fasthttp"
 )

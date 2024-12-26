@@ -63,14 +63,7 @@ export function Provider({
  *
  * This component contains filters and transforms that are desirable for avatars.
  */
-export function Avatar({
-	transform,
-	filters,
-	size,
-	...props
-}: Omit<ImageProps, "width" | "height" | "fit" | "srcKey" | "src"> & {
-	size: number;
-} & ({ srcKey: string } | { src: string })) {
+export function Avatar({ transform, filters, size, ...props }: AvatarProps) {
 	return (
 		<Image
 			fit="cover"
@@ -92,6 +85,13 @@ export function Avatar({
 		/>
 	);
 }
+
+export type AvatarProps = Omit<
+	ImageProps,
+	"width" | "height" | "fit" | "srcKey" | "src"
+> & {
+	size: number;
+} & ({ srcKey: string } | { src: string });
 
 /**
  * A React component that generates an image URL using the Thumbor URL specification and
@@ -199,7 +199,7 @@ export function Image({
 	}
 
 	if ("srcKey" in props) {
-		const srcKey = `files/${props.srcKey}`;
+		const srcKey = `blob/${props.srcKey}`;
 		const encodedKey = srcKey.includes("?")
 			? encodeURIComponent(srcKey)
 			: srcKey;
@@ -588,7 +588,7 @@ export function useDropFiles(
 	 */
 	isActive: boolean;
 } {
-	const [isActive, setIsOver] = useState(false);
+	const [isActive, setIsActive] = useState(false);
 	const storedOptions = useRef(options);
 	useEffect(() => {
 		storedOptions.current = options;
@@ -597,15 +597,15 @@ export function useDropFiles(
 		() => ({
 			onDragEnter(e) {
 				e.preventDefault();
-				setIsOver(true);
+				setIsActive(true);
 			},
 			onDragOver(e) {
 				e.preventDefault();
-				setIsOver(true);
+				setIsActive(true);
 			},
 			onDragLeave(e) {
 				e.preventDefault();
-				setIsOver(false);
+				setIsActive(false);
 			},
 			async onDrop(e) {
 				e.preventDefault();
@@ -643,10 +643,11 @@ export function useDropFiles(
 					}
 				}
 
-				setIsOver(false);
+				setIsActive(false);
 			},
+			"data-dropzone-active": isActive,
 		}),
-		[],
+		[isActive],
 	);
 
 	return { props, isActive };
@@ -721,11 +722,11 @@ async function createSelectedFile(file: File, key?: Key) {
 }
 
 /**
- * A hook that returns the status from a file atom
+ * A hook that returns the status from a selected file
  *
- * @param atom - A file atom
+ * @param selectedFile - A file atom
  */
-export function useFileStatus(
+export function useStatus(
 	selectedFile: SelectedFile,
 ): ExtractAtomValue<SelectedFileData["status"]> {
 	return useAtomValue(
@@ -823,7 +824,7 @@ export function useUploadFile() {
 			file: SelectedFile,
 			options: UploadFileOptions = {},
 		) {
-			const { onProgress, onCancel, onSuccess, onError } = options;
+			const { onProgress, onAbort, onSuccess, onError } = options;
 			const { get, set } = filesStore;
 			const f = get(file);
 			if (ctx.maxUploadSize && f.file.size > ctx.maxUploadSize) {
@@ -837,7 +838,7 @@ export function useUploadFile() {
 			}
 
 			const uploadingFile = get(file);
-			if (get(uploadingFile.status) === "cancelled") {
+			if (get(uploadingFile.status) === "aborted") {
 				return;
 			}
 
@@ -847,8 +848,8 @@ export function useUploadFile() {
 			const abortSignal = f.abortController.signal;
 			// eslint-disable-next-line func-style
 			const handleAbortSignal = (): void => {
-				onCancel?.();
-				set(uploadingFile.status, "cancelled");
+				onAbort?.();
+				set(uploadingFile.status, "aborted");
 				abortSignal.removeEventListener("abort", handleAbortSignal);
 			};
 			abortSignal.addEventListener("abort", handleAbortSignal);
@@ -857,7 +858,7 @@ export function useUploadFile() {
 			// Bails out if we have aborted in the meantime
 			if (
 				f.abortController.signal.aborted ||
-				get(uploadingFile.status) === "cancelled"
+				get(uploadingFile.status) === "aborted"
 			) {
 				return;
 			}
@@ -928,6 +929,11 @@ export function useUploadFile() {
 					}
 				}
 			} catch (err) {
+				// Ignore abort signals
+				if (err instanceof DOMException && err.name === "AbortError") {
+					return;
+				}
+
 				set(uploadingFile.status, "error");
 				const error =
 					typeof err === "string"
@@ -985,6 +991,12 @@ export function useUploadFiles() {
 				(acc, file, i) => {
 					const chunkIndex = Math.floor(i / concurrency);
 					if (!acc[chunkIndex]) acc[chunkIndex] = [];
+					const f = filesStore.get(file);
+					const status = filesStore.get(f.status);
+					if (status === "aborted" || f.abortController.signal.aborted) {
+						return acc;
+					}
+					filesStore.set(f.status, "queued");
 					acc[chunkIndex].push(file);
 					return acc;
 				},
@@ -1000,18 +1012,37 @@ export function useUploadFiles() {
 }
 
 /**
+ * A hook that returns the raw file `File` object from a selected file, the key, and the source.
+ * @param selectedFile - A selected file
+ */
+export function useSelectedFile(selectedFile: SelectedFile) {
+	const file = useAtomValue(selectedFile, { store: filesStore });
+	return useMemo(
+		() => ({
+			key: file.key,
+			file: file.file,
+			source: file.source,
+		}),
+		[file.file, file.key, file.source],
+	);
+}
+
+/**
  * A hook that returns a callback for cancelling a file upload if
  * possible.
  *
  * @param selectedFile - A selected file
  */
-export function useCancelUploadFile(selectedFile: SelectedFile): () => void {
+export function useAbort(selectedFile: SelectedFile): () => void {
 	const file = useAtomValue(selectedFile, { store: filesStore });
 	const setStatus = useSetAtom(file.status, { store: filesStore });
 	return useCallback(() => {
-		file.abortController.abort();
-		setStatus("cancelled");
-	}, [setStatus, file.abortController]);
+		const status = filesStore.get(file.status);
+		if (status !== "success" && status !== "error") {
+			file.abortController.abort();
+			setStatus("aborted");
+		}
+	}, [setStatus, file.status, file.abortController]);
 }
 
 function joinPath(base: string, path: string) {
@@ -1036,10 +1067,7 @@ function joinPath(base: string, path: string) {
 function parseHeaders(headerStr: string) {
 	const headers = new Headers();
 	if (!headerStr) return headers;
-
-	// Split into lines and filter out empty ones
 	const headerPairs = headerStr.trim().split(/[\r\n]+/);
-
 	headerPairs.forEach((line) => {
 		const parts = line.split(": ");
 		const key = parts.shift();
@@ -1053,30 +1081,22 @@ function parseHeaders(headerStr: string) {
 }
 
 /**
- * A hook that generates a preview URL for an image file. Returns a tuple containing
- * the preview URL and metadata about the preview state.
- *
- * @param file - A file atom created by `createSelectedFile`
- * @returns A tuple containing:
- *  - The preview URL as a string, or null if not available
- *  - An object containing:
- *    - `error`: Error message if preview generation failed, null otherwise
- *    - `status`: Current status of the preview ("idle" | "loading" | "success" | "error")
- *    - `clear`: Function to clear the preview state
- *
+ * A hook that generates a preview URL for an image file.
+ * @param file - A selected file
+
  * @example
  * ```tsx
- * const [previewUrl, { status, error }] = usePreviewUrl(selectedFile);
+ * const { url, status, error } = usePreview(selectedFile);
  * return (
  *   <div>
  *     {status === 'loading' && <Spinner />}
  *     {status === 'error' && <Error>{error}</Error>}
- *     {status === 'success' && <img src={previewUrl} alt="Preview" />}
+ *     {status === 'success' && <img src={url} alt="Preview" />}
  *   </div>
  * );
  * ```
  */
-export function usePreviewUrl(file: SelectedFile) {
+export function usePreview(file: SelectedFile) {
 	const [state, setState] = useState<PreviewState>(initialPreviewState);
 	const clearPreview = useCallback(() => {
 		setState(initialPreviewState);
@@ -1084,18 +1104,17 @@ export function usePreviewUrl(file: SelectedFile) {
 
 	useEffect(() => {
 		const f = filesStore.get(file);
-
 		if (!f.file) {
 			clearPreview();
 			return;
 		}
 
-		setState((prev) => ({ ...prev, status: "loading", error: null }));
+		setState((prev) => ({ status: "loading", error: null, data: null }));
 
 		// Validate file type
 		if (!f.file.type.startsWith("image/")) {
 			setState({
-				url: null,
+				data: null,
 				error: "Selected file is not an image",
 				status: "error",
 			});
@@ -1103,18 +1122,17 @@ export function usePreviewUrl(file: SelectedFile) {
 		}
 
 		const reader = new FileReader();
-
 		reader.onload = (e) => {
 			if (
 				e.target instanceof FileReader &&
 				typeof e.target.result === "string"
 			) {
-				setState({ url: e.target.result, error: null, status: "success" });
+				setState({ data: e.target.result, error: null, status: "success" });
 			}
 		};
 
 		reader.onerror = () => {
-			setState({ url: null, error: "Error reading file", status: "error" });
+			setState({ data: null, error: "Error reading file", status: "error" });
 		};
 
 		reader.readAsDataURL(f.file);
@@ -1126,34 +1144,36 @@ export function usePreviewUrl(file: SelectedFile) {
 
 	useEffect(() => {
 		return () => {
-			if (state.url?.startsWith("blob:")) {
-				URL.revokeObjectURL(state.url);
+			if (state.data?.startsWith("blob:")) {
+				URL.revokeObjectURL(state.data);
 			}
 		};
-	}, [state.url]);
+	}, [state.data]);
 
-	return [
-		state.url,
-		useMemo(() => {
-			return {
-				error: state.error,
-				status: state.status,
-				clear: clearPreview,
-			};
-		}, [state.error, state.status, clearPreview]),
-	] as const;
+	return state;
 }
 
 const initialPreviewState: PreviewState = {
-	url: null,
+	data: null,
 	error: null,
 	status: "idle",
 };
-type PreviewState = {
-	url: string | null;
-	error: string | null;
-	status: PreviewStatus;
-};
+type PreviewState =
+	| {
+			data: null;
+			error: null;
+			status: Exclude<PreviewStatus, "success" | "error">;
+	  }
+	| {
+			data: string;
+			error: null;
+			status: Exclude<PreviewStatus, "idle" | "loading" | "error">;
+	  }
+	| {
+			data: null;
+			error: string;
+			status: Exclude<PreviewStatus, "idle" | "loading" | "success">;
+	  };
 type PreviewStatus = "idle" | "loading" | "success" | "error";
 
 function bufferToHex(buffer: ArrayBuffer) {
@@ -1201,9 +1221,9 @@ type UploadFileOptions = {
 	 */
 	withCredentials?: boolean;
 	/**
-	 * A function that is called when the upload is cancelled
+	 * A function that is called when the upload is aborted
 	 */
-	onCancel?: () => void;
+	onAbort?: () => void;
 	/**
 	 * Called when all of the files have successfully uploaded
 	 */
@@ -1274,12 +1294,12 @@ export type SelectedFileData = {
 	 * - `"idle"`: the file has not started uploading
 	 * - `"queued"`: the file has been acknowledged and is waiting in a queue to upload
 	 * - `"uploading"`: the file is uploading
-	 * - `"cancelled"`: the file upload was cancelled by the user before it completed
+	 * - `"aborted"`: the file upload was aborted by the user before it completed
 	 * - `"success"`: the file has been successfully uploaded
 	 * - `"error"`: an error occurred during the upload and it did not finish
 	 */
 	status: PrimitiveAtom<
-		"idle" | "queued" | "uploading" | "cancelled" | "success" | "error"
+		"idle" | "queued" | "uploading" | "aborted" | "success" | "error"
 	>;
 	/**
 	 * Timestamp when the upload started

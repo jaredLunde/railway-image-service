@@ -12,7 +12,7 @@ import (
 
 	"github.com/cshum/imagor"
 	"github.com/cshum/imagor/imagorpath"
-	"github.com/jaredLunde/railway-images/internal/app/keyval"
+	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
 )
 
 var dotFileRegex = regexp.MustCompile(`/.`)
@@ -49,10 +49,13 @@ func (s *KVStorage) Path(image string) (string, bool) {
 	if strings.HasPrefix(image, "/") {
 		key = []byte(image[1:])
 	}
-	if !bytes.HasPrefix(key, []byte("files/")) {
+	if !bytes.HasPrefix(key, []byte("blob/")) {
 		return "", false
 	}
-	key = bytes.TrimPrefix(key, []byte("files/"))
+	key = bytes.TrimPrefix(key, []byte("blob/"))
+	if s.KV.GetRecord(key).Deleted != keyval.NO {
+		return "", false
+	}
 	return filepath.Join(s.PathPrefix, keyval.KeyToPath(key)), true
 }
 

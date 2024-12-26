@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/jaredLunde/railway-images/internal/pkg/logger"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/logger"
 )
 
 type Config struct {
