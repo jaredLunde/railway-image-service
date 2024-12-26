@@ -6,14 +6,7 @@
 		"type": "git",
 		"url": "git+https://github.com/jaredLunde/railway-images.git"
 	},
-	"keywords": [
-		"react",
-		"railway",
-		"railway",
-		"template",
-		"react",
-		"image"
-	],
+	"keywords": ["react", "railway", "railway", "template", "react", "image"],
 	"author": "Jared Lunde",
 	"license": "MIT",
 	"bugs": {
@@ -37,6 +30,7 @@
 		},
 		"./package.json": "./package.json"
 	},
+	"files": ["/dist"],
 	"devDependencies": {
 		"@types/node": "^22.10.2",
 		"@types/react": "^19.0.2",
