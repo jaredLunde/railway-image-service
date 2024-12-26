@@ -1,0 +1,52 @@
+{
+	"name": "railway-image-service",
+	"version": "0.1.0",
+	"description": "JavaScript and React packages for the railway-image-service template",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/jaredLunde/railway-image-service.git"
+	},
+	"keywords": ["react", "railway", "railway", "template", "react", "image"],
+	"author": "Jared Lunde",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/jaredLunde/railway-image-service/issues"
+	},
+	"homepage": "https://github.com/jaredLunde/railway-image-service#readme",
+	"sideEffects": false,
+	"main": "dist/index.js",
+	"module": "dist/index.mjs",
+	"types": "dist/index.d.ts",
+	"exports": {
+		"./*": {
+			"import": {
+				"types": "./dist/*.d.mts",
+				"default": "./dist/*.mjs"
+			},
+			"default": {
+				"types": "./dist/*.d.ts",
+				"default": "./dist/*.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"files": ["/dist"],
+	"devDependencies": {
+		"@types/node": "^22.10.2",
+		"@types/react": "^19.0.2",
+		"astro": "^5.1.1",
+		"jotai": "^2.11.0",
+		"next": "^15.1.2",
+		"react": "^19.0.0",
+		"tsup": "^8.3.5",
+		"typescript": "^5.7.2",
+		"vitest": "^2.1.8"
+	},
+	"scripts": {
+		"build": "tsup",
+		"dev": "tsup --watch",
+		"check": "npm run check:types",
+		"check:types": "tsc --noEmit --incremental --tsBuildInfoFile .typescript/tsconfig.tsbuildinfo",
+		"test": "vitest"
+	}
+}

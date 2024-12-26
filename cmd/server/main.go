@@ -21,11 +21,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
-	"github.com/jaredLunde/railway-images/internal/app/imagor"
-	"github.com/jaredLunde/railway-images/internal/app/keyval"
-	"github.com/jaredLunde/railway-images/internal/app/signature"
-	"github.com/jaredLunde/railway-images/internal/pkg/logger"
-	"github.com/jaredLunde/railway-images/internal/pkg/mw"
+	"github.com/jaredLunde/railway-image-service/internal/app/imagor"
+	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
+	"github.com/jaredLunde/railway-image-service/internal/app/signature"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/logger"
+	"github.com/jaredLunde/railway-image-service/internal/pkg/mw"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -46,13 +46,15 @@ func main() {
 	})
 
 	kvService, err := keyval.New(keyval.Config{
-		BasePath:    "/files",
-		UploadPath:  cfg.UploadPath,
-		LevelDBPath: cfg.LevelDBPath,
-		SoftDelete:  true,
-		SignSecret:  cfg.SignatureSecretKey,
-		Logger:      log,
-		Debug:       debug,
+		BasePath:         "/blob",
+		UploadPath:       cfg.UploadPath,
+		LevelDBPath:      cfg.LevelDBPath,
+		SoftDelete:       true,
+		SignSecret:       cfg.SignatureSecretKey,
+		MaxSize:          cfg.MaxUploadSize,
+		AllowedMimeTypes: []string{"image/"},
+		Logger:           log,
+		Debug:            debug,
 	})
 	if err != nil {
 		log.Error("keyval app failed to start", "error", err)
@@ -84,11 +86,10 @@ func main() {
 
 	app := fiber.New(fiber.Config{
 		StrictRouting:     true,
-		BodyLimit:         cfg.MaxUploadSize,
+		BodyLimit:         cfg.MaxUploadSize, // This doesn't actually work with StreamBodyRequest, but it's here for good times
 		WriteTimeout:      cfg.RequestTimeout,
 		ReadTimeout:       cfg.RequestTimeout,
 		StreamRequestBody: true,
-		ReduceMemoryUsage: true, // memory costs money brah, i'm a poor
 		JSONEncoder: func(v interface{}) ([]byte, error) {
 			return json.MarshalWithOption(v, json.DisableHTMLEscape())
 		},
@@ -105,7 +106,11 @@ func main() {
 	verifyAPIKey := mw.NewVerifyAPIKey(cfg.SecretKey)
 	verifyAccess := mw.NewVerifyAccess(cfg.SecretKey, cfg.SignatureSecretKey)
 	app.Use(mw.NewRealIP())
-	app.Use(helmet.New(helmet.Config{HSTSPreloadEnabled: true, HSTSMaxAge: 31536000}))
+	app.Use(helmet.New(helmet.Config{
+		HSTSPreloadEnabled:        true,
+		HSTSMaxAge:                31536000,
+		CrossOriginResourcePolicy: "cross-origin",
+	}))
 	app.Use(fiberrecover.New(fiberrecover.Config{EnableStackTrace: cfg.Environment == EnvironmentDevelopment}))
 	app.Use(favicon.New())
 	app.Use(requestid.New())
@@ -135,10 +140,10 @@ func main() {
 		r.URL.RawQuery = q.Encode()
 		imagorService.ServeHTTP(w, r)
 	})))
-	app.Get("/files", kvService.ServeHTTP, verifyAccess)
-	app.Get("/files/*", kvService.ServeHTTP, verifyAccess)
-	app.Put("/files/*", kvService.ServeHTTP, verifyAccess)
-	app.Delete("/files/*", kvService.ServeHTTP, verifyAccess)
+	app.Get("/blob", kvService.ServeHTTP, verifyAccess)
+	app.Get("/blob/*", kvService.ServeHTTP, verifyAccess)
+	app.Put("/blob/*", kvService.ServeHTTP, verifyAccess)
+	app.Delete("/blob/*", kvService.ServeHTTP, verifyAccess)
 	app.Get("/sign/*", signatureService.ServeHTTP, verifyAPIKey)
 
 	g := errgroup.Group{}

@@ -1,6 +1,7 @@
 package imagor
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -8,17 +9,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/cshum/imagor"
 	"github.com/cshum/imagor/imagorpath"
-	"github.com/jaredLunde/railway-images/internal/app/keyval"
+	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
 )
 
 var dotFileRegex = regexp.MustCompile(`/.`)
 
-// KVStorage File Storage implements imagor.Storage interface
-type KVStorage struct {
+// BlobStorage File Storage implements imagor.Storage interface
+type BlobStorage struct {
 	KV              *keyval.KeyVal
 	PathPrefix      string
 	Blacklists      []*regexp.Regexp
@@ -26,14 +26,13 @@ type KVStorage struct {
 	WritePermission os.FileMode
 	SaveErrIfExists bool
 	SafeChars       string
-	Expiration      time.Duration
 
 	safeChars imagorpath.SafeChars
 }
 
 // New creates FileStorage
-func NewKVStorage(kv *keyval.KeyVal, uploadPath string) *KVStorage {
-	s := &KVStorage{
+func NewBlobStorage(kv *keyval.KeyVal, uploadPath string) *BlobStorage {
+	s := &BlobStorage{
 		KV:              kv,
 		Blacklists:      []*regexp.Regexp{dotFileRegex},
 		MkdirPermission: 0755,
@@ -45,31 +44,35 @@ func NewKVStorage(kv *keyval.KeyVal, uploadPath string) *KVStorage {
 }
 
 // Path transforms and validates image key for storage path
-func (s *KVStorage) Path(image string) (string, bool) {
+func (s *BlobStorage) Path(image string) (string, bool) {
 	key := []byte(image)
-	if !strings.HasPrefix(image, "/") {
-		key = append([]byte("/"), key...)
+	if strings.HasPrefix(image, "/") {
+		key = []byte(image[1:])
+	}
+	if !bytes.HasPrefix(key, []byte("blob/")) {
+		return "", false
+	}
+	key = bytes.TrimPrefix(key, []byte("blob/"))
+	if s.KV.GetRecord(key).Deleted != keyval.NO {
+		return "", false
 	}
 	return filepath.Join(s.PathPrefix, keyval.KeyToPath(key)), true
 }
 
 // Get implements imagor.Storage interface
-func (s *KVStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
+func (s *BlobStorage) Get(_ *http.Request, image string) (*imagor.Blob, error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return nil, imagor.ErrInvalid
 	}
-
-	return imagor.NewBlobFromFile(image, func(stat os.FileInfo) error {
-		if s.Expiration > 0 && time.Since(stat.ModTime()) > s.Expiration {
-			return imagor.ErrExpired
-		}
+	f := imagor.NewBlobFromFile(image, func(stat os.FileInfo) error {
 		return nil
-	}), nil
+	})
+	return f, nil
 }
 
 // Put implements imagor.Storage interface
-func (s *KVStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err error) {
+func (s *BlobStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return imagor.ErrInvalid
@@ -108,7 +111,7 @@ func (s *KVStorage) Put(_ context.Context, image string, blob *imagor.Blob) (err
 }
 
 // Delete implements imagor.Storage interface
-func (s *KVStorage) Delete(_ context.Context, image string) error {
+func (s *BlobStorage) Delete(_ context.Context, image string) error {
 	image, ok := s.Path(image)
 	if !ok {
 		return imagor.ErrInvalid
@@ -117,7 +120,7 @@ func (s *KVStorage) Delete(_ context.Context, image string) error {
 }
 
 // Stat implements imagor.Storage interface
-func (s *KVStorage) Stat(_ context.Context, image string) (stat *imagor.Stat, err error) {
+func (s *BlobStorage) Stat(_ context.Context, image string) (stat *imagor.Stat, err error) {
 	image, ok := s.Path(image)
 	if !ok {
 		return nil, imagor.ErrInvalid
