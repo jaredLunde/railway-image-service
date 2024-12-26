@@ -188,6 +188,8 @@ type ListResult struct {
 type ListOptions struct {
 	// The maximum number of keys to return
 	Limit int
+	// A prefix to filter keys by
+	Prefix string
 	// The key to start listing from
 	StartingAt string
 	// If true, list unlinked (soft deleted) files
@@ -203,6 +205,9 @@ func (c *Client) List(opts ListOptions) (*ListResult, error) {
 	q := u.Query()
 	if opts.Limit > 0 {
 		q.Set("limit", fmt.Sprintf("%d", opts.Limit))
+	}
+	if opts.Prefix != "" {
+		q.Set("prefix", opts.Prefix)
 	}
 	if opts.StartingAt != "" {
 		q.Set("starting_at", opts.StartingAt)

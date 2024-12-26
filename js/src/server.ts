@@ -72,6 +72,9 @@ export class RailwayImagesClient {
 		if (options.limit) {
 			params.set("limit", options.limit.toString());
 		}
+		if (options.prefix) {
+			params.set("prefix", options.prefix);
+		}
 		if (options.startingAt) {
 			params.set("starting_at", options.startingAt);
 		}
@@ -87,6 +90,8 @@ export class RailwayImagesClient {
 export type ListOptions = {
 	/** The maximum number of keys to return */
 	limit?: number;
+	/** A prefix to filter keys by */
+	prefix?: string;
 	/** The key to start listing from */
 	startingAt?: string;
 	/** If true, list unlinked (soft deleted) files */

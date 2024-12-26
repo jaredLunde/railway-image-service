@@ -58,7 +58,7 @@ export function Provider({
  * A React component that generates an image URL using the Thumbor URL specification.
  *
  * The URL is constructed in the following order:
- * /unsafe/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters/IMAGE
+ * /trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters/IMAGE
  *
  * @example
  * ```tsx

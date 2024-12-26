@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
+	"github.com/jaredLunde/railway-images/client/sign"
+	"github.com/jaredLunde/railway-images/internal/pkg/ptr"
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/valyala/fasthttp"
 )
@@ -77,13 +80,24 @@ func (k *KeyVal) QueryHandler(key []byte, c fiber.Ctx) {
 	} else {
 		nextURI.QueryArgs().Del("starting_at")
 	}
+
+	signedURL := ptr.String("")
+	if nextPage != "" {
+		nextPageURL, err := url.Parse(nextPage)
+		if err != nil {
+			c.Status(fiber.StatusInternalServerError)
+			return
+		}
+		signedURL, err = sign.SignURL(nextPageURL, k.signSecret)
+		if err != nil {
+			c.Status(fiber.StatusInternalServerError)
+			return
+		}
+	}
+
 	c.Status(fiber.StatusOK)
 	c.Set("Content-Type", "application/json")
-	c.JSON(ListResponse{
-		NextPage: nextPage,
-		HasMore:  next != "",
-		Keys:     keys,
-	})
+	c.JSON(ListResponse{NextPage: *signedURL, HasMore: next != "", Keys: keys})
 }
 
 func (k *KeyVal) Delete(key []byte, unlink bool) int {
@@ -220,7 +234,7 @@ func (k *KeyVal) ServeHTTP(c fiber.Ctx) error {
 
 	// List query
 	if string(key) == k.basePath && method == fiber.MethodGet {
-		k.QueryHandler(key, c)
+		k.QueryHandler([]byte(c.Query("prefix", "")), c)
 		return nil
 	}
 
