@@ -330,19 +330,28 @@ type UploadFileOptions = {
 	/**
 	 * A function that is called when the upload is aborted
 	 */
-	onAbort?: () => void;
+	onAbort?: (selectedFileData: Pick<SelectedFileData, "key" | "file">) => void;
 	/**
 	 * Called when all of the files have successfully uploaded
 	 */
-	onSuccess?: (responses: Response) => Promise<void> | void;
+	onSuccess?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		response: Response,
+	) => Promise<void> | void;
 	/**
 	 * Called when there is a progress event
 	 */
-	onProgress?: (progress: ProgressData) => Promise<void> | void;
+	onProgress?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		progress: ProgressData,
+	) => Promise<void> | void;
 	/**
 	 * Called when there was an error uploading
 	 */
-	onError?: (err: unknown) => Promise<void> | void;
+	onError?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		err: unknown,
+	) => Promise<void> | void;
 };
 ```
 

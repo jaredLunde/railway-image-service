@@ -828,13 +828,19 @@ export function useUploadFile() {
 			const { onProgress, onAbort, onSuccess, onError } = options;
 			const { get, set } = filesStore;
 			const f = get(file);
+			const key = await Promise.resolve(
+				typeof options.key === "function"
+					? options.key(f.file)
+					: options.key ?? f.key,
+			);
+
 			if (ctx.maxUploadSize && f.file.size > ctx.maxUploadSize) {
 				set(f.status, "error");
 				const error = new Error(
 					`File is too large. Max size is ${ctx.maxUploadSize} bytes.`,
 				);
 				set(file, (current) => ({ ...current, error: error.message }));
-				onError?.(error);
+				onError?.({ key, file: f.file }, error);
 				return;
 			}
 
@@ -849,7 +855,7 @@ export function useUploadFile() {
 			const abortSignal = f.abortController.signal;
 			// eslint-disable-next-line func-style
 			const handleAbortSignal = (): void => {
-				onAbort?.();
+				onAbort?.({ key, file: f.file });
 				set(uploadingFile.status, "aborted");
 				abortSignal.removeEventListener("abort", handleAbortSignal);
 			};
@@ -864,18 +870,12 @@ export function useUploadFile() {
 				return;
 			}
 
-			const key = await Promise.resolve(
-				typeof options.key === "function"
-					? options.key(f.file)
-					: options.key ?? f.key,
-			);
-
 			try {
 				response = await new Promise((resolve, reject) => {
 					const xhr = new XMLHttpRequest();
 					xhr.withCredentials = options.withCredentials ?? false;
-					for (const key in options.headers ?? {}) {
-						xhr.setRequestHeader(key, options.headers![key]);
+					for (const name in options.headers ?? {}) {
+						xhr.setRequestHeader(name, options.headers![name]);
 					}
 					abortSignal.addEventListener("abort", () => {
 						xhr.abort();
@@ -893,6 +893,7 @@ export function useUploadFile() {
 								].slice(-10);
 							});
 							onProgress?.(
+								{ key, file: f.file },
 								calculateProgress(
 									e.loaded,
 									e.total,
@@ -943,7 +944,7 @@ export function useUploadFile() {
 							? err.message
 							: "An unknown error occurred";
 				set(file, (current) => ({ ...current, error }));
-				onError?.(err);
+				onError?.({ key, file: f.file }, err);
 			} finally {
 				abortSignal.removeEventListener("abort", handleAbortSignal);
 			}
@@ -951,7 +952,7 @@ export function useUploadFile() {
 			if (get(uploadingFile.status) === "uploading") {
 				set(uploadingFile.status, "success");
 				set(file, (current) => ({ ...current, response }));
-				onSuccess?.(response!);
+				onSuccess?.({ key, file: f.file }, response!);
 			}
 		},
 		[ctx.maxUploadSize, ctx.url],
@@ -1016,7 +1017,9 @@ export function useUploadFiles() {
  * A hook that returns the raw file `File` object from a selected file and the key.
  * @param selectedFile - A selected file
  */
-export function useSelectedFile(selectedFile: SelectedFile) {
+export function useSelectedFile(
+	selectedFile: SelectedFile,
+): Pick<SelectedFileData, "key" | "file"> {
 	const file = useAtomValue(selectedFile, { store: filesStore });
 	return useMemo(
 		() => ({
@@ -1223,19 +1226,28 @@ type UploadFileOptions = {
 	/**
 	 * A function that is called when the upload is aborted
 	 */
-	onAbort?: () => void;
+	onAbort?: (selectedFileData: Pick<SelectedFileData, "key" | "file">) => void;
 	/**
 	 * Called when all of the files have successfully uploaded
 	 */
-	onSuccess?: (responses: Response) => Promise<void> | void;
+	onSuccess?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		response: Response,
+	) => Promise<void> | void;
 	/**
 	 * Called when there is a progress event
 	 */
-	onProgress?: (progress: ProgressData) => Promise<void> | void;
+	onProgress?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		progress: ProgressData,
+	) => Promise<void> | void;
 	/**
 	 * Called when there was an error uploading
 	 */
-	onError?: (err: unknown) => Promise<void> | void;
+	onError?: (
+		selectedFileData: Pick<SelectedFileData, "key" | "file">,
+		err: unknown,
+	) => Promise<void> | void;
 };
 
 export type ProgressData = {
