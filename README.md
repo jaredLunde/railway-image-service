@@ -14,7 +14,7 @@ Upload, serve, and process images on Railways. Includes on-the-fly image resizin
 - [x] Uses [libvips](https://libvips.github.io/libvips/) for fast image processing
 - [x] S3-ish blob storage (PUT, GET, DELETE) protected by an API key
 - [x] Secure image serving with URLs protected by SHA256-HMAC signatures
-- [x] [React components, Node.js client](js/README.md), and [Go client](client/README.md) for easy integration
+- [x] [React components, Node.js client](js/), and [Go client](client/) for easy integration
 
 ## API
 
@@ -41,7 +41,7 @@ curl http://localhost:3000/sign/blob/gopher.png \
 curl http://localhost:3000/blob/gopher.png?x-signature=...&x-expires=...
 ```
 
-The [Node](js/README.md) and [Go](client/README.md) clients do this for you and the signature
+The [Node](js/) and [Go](client/) clients do this for you and the signature
 can be created locally if you provide the clients your `SIGNATURE_SECRET_KEY`. Again, take
 extra care _not to leak_ this key. For example, keep it and the Node.js client out of your
 frontend bundle.

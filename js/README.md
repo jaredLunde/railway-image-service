@@ -157,6 +157,9 @@ The URL is constructed in the following order:
 
 **Props**
 
+See the [Imagor documentation](https://github.com/cshum/imagor/blob/e8b9c7c731a1ce65368f20745f5064d3f1083ac1/README.md#image-endpoint) for
+filter and transform-specific documentation.
+
 | Name       | Type             | Required? | Description                                                                                      |
 | ---------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------ |
 | `src`      | `string`         | No        | An image URL from the Internet to process and serve (e.g. https://github.com/jaredLunde.png)     |
