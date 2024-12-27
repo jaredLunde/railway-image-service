@@ -431,6 +431,44 @@ A hook that returns a callback for cancelling a file upload if possible.
 A callback that signals the abort controller for the file and sets its status to `cancelled` when the
 file isn't in a eterminal state (success/error).
 
+### Utility functions
+
+#### `hashFile()`
+
+Get the SHA-256 hash of a file's contents
+
+**Arguments**
+
+| Name   | Type   | Required? | Description      |
+| ------ | ------ | --------- | ---------------- |
+| `file` | `File` | Yes       | The file to hash |
+
+**Returns**
+
+A promise that resolves with the SHA-256 hash of the file's contents
+
+```ts
+async function hashFile(file: File): Promise<string>;
+```
+
+#### `extname()`
+
+Get the file extension of a file
+
+**Arguments**
+
+| Name   | Type   | Required? | Description      |
+| ------ | ------ | --------- | ---------------- |
+| `file` | `File` | Yes       | The file to hash |
+
+**Returns**
+
+The file extension
+
+```ts
+function extname(file: File): string;
+```
+
 ### Constants
 
 #### `IMAGE_MIMES`
