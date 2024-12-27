@@ -4,7 +4,7 @@ import tsconfig from "./tsconfig.json";
 
 export default defineConfig({
 	name: "railway-image-service",
-	entry: ["src/astro.ts", "src/next.ts", "src/react.tsx", "src/server.ts"],
+	entry: ["src/react.tsx", "src/server.ts"],
 	format: ["esm", "cjs"],
 	dts: true,
 	clean: true,
