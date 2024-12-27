@@ -308,11 +308,11 @@ A hook that returns a callback for uploading a file to the server.
 
 A callback used to upload a single file to blob storage.
 
-````ts
+```ts
 async function uploadFile(
 	file: SelectedFile,
 	options: UploadFileOptions = {},
-): Promise<void>
+): Promise<void>;
 
 type UploadFileOptions = {
 	/**
@@ -366,7 +366,7 @@ async function uploadFiles(
 		concurrency?: number;
 	} & UploadFileOptions = {},
 ): Promise<void>;
-````
+```
 
 #### `useProgress()`
 
