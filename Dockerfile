@@ -71,6 +71,7 @@ RUN update-ca-certificates 2>/dev/null || true
 COPY --chown=nonroot:nonroot --from=build /go/bin/app .
 RUN addgroup --system nonroot && adduser --system --ingroup nonroot nonroot
 RUN chown -R nonroot:nonroot /app
+RUN chown -R nonroot:nonroot /data
 
 ENV VIPS_WARNING=0
 ENV MALLOC_ARENA_MAX=2
