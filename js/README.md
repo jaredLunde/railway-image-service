@@ -160,13 +160,13 @@ The URL is constructed in the following order:
 See the [Imagor documentation](https://github.com/cshum/imagor/blob/e8b9c7c731a1ce65368f20745f5064d3f1083ac1/README.md#image-endpoint) for
 filter and transform-specific documentation.
 
-| Name       | Type             | Required? | Description                                                                                      |
-| ---------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `src`      | `string`         | No        | An image URL from the Internet to process and serve (e.g. https://github.com/jaredLunde.png)     |
-| `srcKey`   | `string`         | No        | A key from blob storage to process and serve (e.g. your-image.png)                               |
-| `fit`      | `ImageFit`       | No        | How image should fit within target dimensions (`cover`, `contain`, `stretch`, `contain-stretch`) |
-| `transform | `ImageTransform` | No        | Apply image transformations                                                                      |
-| `filters`  | `ImageFilters`   | No        | Apply filters to the image                                                                       |
+| Name        | Type             | Required? | Description                                                                                      |
+| ----------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `src`       | `string`         | No        | An image URL from the Internet to process and serve (e.g. https://github.com/jaredLunde.png)     |
+| `srcKey`    | `string`         | No        | A key from blob storage to process and serve (e.g. your-image.png)                               |
+| `fit`       | `ImageFit`       | No        | How image should fit within target dimensions (`cover`, `contain`, `stretch`, `contain-stretch`) |
+| `transform` | `ImageTransform` | No        | Apply image transformations                                                                      |
+| `filters`   | `ImageFilters`   | No        | Apply filters to the image                                                                       |
 
 #### `<Avatar>`
 
