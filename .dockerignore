@@ -1,8 +1,6 @@
 
 # GitHub workflows
 /.github
-# Go client
-/client
 # JS utilities
 /js
 # Demo site
