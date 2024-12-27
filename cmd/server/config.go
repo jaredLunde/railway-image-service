@@ -8,7 +8,7 @@ import (
 )
 
 type Config struct {
-	Host        string `env:"HOST" envDefault:"[::]"`
+	Host        string `env:"HOST" envDefault:"0.0.0.0"`
 	Port        int    `env:"PORT" envDefault:"3000"`
 	CertFile    string `env:"CERT_FILE" envDefault:""`
 	CertKeyFile string `env:"CERT_KEY_FILE" envDefault:""`
@@ -20,9 +20,9 @@ type Config struct {
 	// The maximum size of a request body in bytes
 	MaxUploadSize int `env:"MAX_UPLOAD_SIZE" envDefault:"10485760"` // 10MB
 	// The path to the directory where uploaded files are stored
-	UploadPath string `env:"UPLOAD_PATH" envDefault:"/data/uploads"`
+	UploadPath string `env:"UPLOAD_PATH" envDefault:"/app/data/uploads"`
 	// The path to the LevelDB database
-	LevelDBPath string `env:"LEVELDB_PATH" envDefault:"/data/db"`
+	LevelDBPath string `env:"LEVELDB_PATH" envDefault:"/app/data/db"`
 	// Used for securing the key value storage API
 	SecretKey string `env:"SECRET_KEY" envDefault:"password"`
 	// Used for signing URLs
