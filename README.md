@@ -1,8 +1,9 @@
 # Image Processing Service for Railway
 
-> A self-hosted alternative to services like Cloudinary, Imgix, and others.
+A self-hosted alternative to services like Cloudinary, Imgix, and others that helps you
+move faster and pay less when you need to manage image content.
 
-Upload, serve, and process images on Railway. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
+Upload, serve, and process images on Railways. Includes on-the-fly image resizing, cropping, automatic AVIF/WebP, and more.
 
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/MF8Rcp?referralCode=5hTSOZ)
 
@@ -10,17 +11,46 @@ Upload, serve, and process images on Railway. Includes on-the-fly image resizing
 
 - [x] On-the-fly image processing (resize, crop, etc.) from any allowlisted domain or Railway volume
 - [x] Automatic AVIF/WebP conversion
-- [x] S3-ish blob storage (PUT, GET, DELETE), protected by an API key
-- [x] Use [libvips](https://libvips.github.io/libvips/) for fast image processing
-- [x] Secure image URLs with signed paths and allowlist domains
+- [x] Uses [libvips](https://libvips.github.io/libvips/) for fast image processing
+- [x] S3-ish blob storage (PUT, GET, DELETE) protected by an API key
+- [x] Secure image serving with URLs protected by SHA256-HMAC signatures
 - [x] [React components, Node.js client](js/README.md), and [Go client](client/README.md) for easy integration
 
 ## API
 
+### Authentication
+
+To authenticate with your `SECRET_KEY`, use the `x-api-key` header:
+
+```sh
+curl http://localhost:3000/blob/gopher.png \
+  -H "x-api-key: $IMAGE_SERVICE_SECRET_KEY"
+```
+
+To authenticate with signed URLs, first create a signed URL with your `SECRET_KEY` then
+use the signed URL directly. This is extremely useful for allowing users to upload directly
+to your blob storage and to protect against attacks on your image processing endpoint.
+
+To create the signed URL, prefix the URL you want to allow access to with `/sign/`.
+
+```sh
+curl http://localhost:3000/sign/blob/gopher.png \
+  -H "x-api-key: $IMAGE_SERVICE_SECRET_KEY"
+# -> http://localhost:3000/blob/gopher.png?x-signature=...&x-expires=...
+
+curl http://localhost:3000/blob/gopher.png?x-signature=...&x-expires=...
+```
+
+The [Node](js/README.md) and [Go](client/README.md) clients do this for you and the signature
+can be created locally if you provide the clients your `SIGNATURE_SECRET_KEY`. Again, take
+extra care _not to leak_ this key. For example, keep it and the Node.js client out of your
+frontend bundle.
+
 ### Blob storage API
 
-To access the blob API, you must provide an `x-api-key` header with the value of the `SECRET_KEY` environment variable.
-Alternatively, you can use a signed URL to access the blob API. The `/sign/` endpoint always requires the `x-api-key` header.
+This is an API for putting, getting, and deleting images in blob storage. You can let users
+directly `PUT` objects via this API, but you should do so with signed URLs and keep your API key
+absolutely secret.
 
 | Method   | Path              | Description                                        |
 | -------- | ----------------- | -------------------------------------------------- |
@@ -28,19 +58,26 @@ Alternatively, you can use a signed URL to access the blob API. The `/sign/` end
 | `GET`    | `/blob/:key`      | Get a file                                         |
 | `DELETE` | `/blob/:key`      | Delete a file                                      |
 | `GET`    | `/blob`           | List files with `limit`, `starting_at` parameters. |
-| `GET`    | `/sign/blob/:key` | Create a signed URL for a blob storage operation   |
+| `GET`    | `/sign/blob/:key` | Get a signed URL for a blob storage operation      |
 
 ### Image processing API
 
-| Method | Path                              | Description                                                        |
-| ------ | --------------------------------- | ------------------------------------------------------------------ |
-| `GET`  | `/serve/:operations?/:image`      | Process an image on the fly                                        |
-| `GET`  | `/serve/meta/:operations?/:image` | Get the metadata of an image, e.g. dimensions, format, orientation |
-| `GET`  | `/sign/serve/:operations?/:image` | Create a signed URL for an image processing operation              |
+This is your "public" API that processes and serves images from either blob storage or the Internet.
+
+| Method | Path                                 | Description                                                                        |
+| ------ | ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `GET`  | `/serve/:operations?/blob/:key`      | Process an image in blob storage on the fly                                        |
+| `GET`  | `/serve/:operations?/url/:url`       | Process an image via HTTP on the fly                                               |
+| `GET`  | `/serve/meta/:operations?/blob/:key` | Get the metadata of an image in blob storage, e.g. dimensions, format, orientation |
+| `GET`  | `/serve/meta/:operations?/url/:url`  | Get the metadata of an image via HTTP, e.g. dimensions, format, orientation        |
+| `GET`  | `/sign/serve/:operations?/blob/:key` | Get a signed URL of an image in blob storage for an image processing operation     |
+| `GET`  | `/sign/serve/:operations?/url/:url`  | Get a signed URL of an image via HTTP for an image processing operation            |
 
 ---
 
 ## Configuration
+
+The service can be configured by setting the environment variables below.
 
 | Environment Variable         | Description                                                                                                                                                                         | Default           |
 | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
@@ -143,7 +180,7 @@ The endpoint is a series of URL parts that define the processing operations to b
 See the [imagor documentation](https://github.com/cshum/imagor/blob/e8b9c7c731a1ce65368f20745f5064d3f1083ac1/README.md#image-endpoint) for
 a comprehensive list of examples.
 
-### Crop and resize an uploaded image
+### Crop and resize an image from blob storage
 
 ```bash
 # Create a signed URL

@@ -1,4 +1,9 @@
-/js
-/client
+
+# GitHub workflows
 /.github
-/examples
+# Go client
+/client
+# JS utilities
+/js
+# Demo site
+/web

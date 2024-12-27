@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	fiberrecover "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/requestid"
+	"github.com/jaredLunde/railway-image-service/client/sign"
 	"github.com/jaredLunde/railway-image-service/internal/app/imagor"
 	"github.com/jaredLunde/railway-image-service/internal/app/keyval"
 	"github.com/jaredLunde/railway-image-service/internal/app/signature"
@@ -134,6 +136,18 @@ func main() {
 		}
 		if sig == "" {
 			sig = "unsafe"
+			// Fallback to an API key if there is one. If it's a valid key, generate the signature
+			// on the fly so the request can succeed.
+			apiKey := r.Header.Get("x-api-key")
+			if apiKey != "" {
+				if subtle.ConstantTimeCompare([]byte(apiKey), []byte(cfg.SecretKey)) != 1 {
+					w.WriteHeader(fiber.StatusUnauthorized)
+					w.Write([]byte("unauthorized"))
+					return
+				}
+
+				sig = sign.Sign(r.URL.Path, cfg.SignatureSecretKey)
+			}
 		}
 		r.URL.Path = fmt.Sprintf("/%s%s", sig, strings.TrimPrefix(r.URL.Path, "/serve"))
 		q.Del("x-signature")

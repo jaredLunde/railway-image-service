@@ -27,6 +27,9 @@ type RailwayImagesContextType = {
 	 * The maximum size of an image that can be uploaded in bytes.
 	 */
 	maxUploadSize?: number;
+	/**
+	 * The API base URL
+	 */
 	url:
 		| string
 		| {
@@ -46,6 +49,9 @@ type RailwayImagesContextType = {
  */
 const filesStore = createStore();
 
+/**
+ * Provides configuration to its child hooks and components.
+ */
 export function Provider({
 	children,
 	...props
@@ -386,7 +392,7 @@ function buildFilterString(filters: Partial<ImageFilters>): string {
 /**
  * Fit modes determine how the image fits within its target dimensions
  */
-export type Fit =
+export type ImageFit =
 	| "cover" // Default - resize and crop to fill dimensions
 	| "contain" // Resize to fit within dimensions (fit-in)
 	| "stretch" // Stretch to fill dimensions ignoring aspect ratio
@@ -395,7 +401,7 @@ export type Fit =
 /**
  * Transform options for the image
  */
-export type Transform = {
+export type ImageTransform = {
 	/**
 	 * Image flipping
 	 */
@@ -441,11 +447,11 @@ export type ImageProps = ({ src: string } | { srcKey: string }) & {
 	/**
 	 * How image should fit within target dimensions
 	 */
-	fit?: Fit;
+	fit?: ImageFit;
 	/**
 	 * Apply image transformations
 	 */
-	transform?: Transform;
+	transform?: ImageTransform;
 	/**
 	 * Apply filters to the image
 	 */
@@ -657,10 +663,6 @@ export function useDropFiles(
  * A hook that creates a clickable dropzone for files. This is a convenience
  * wrapper around `useSelectFiles` and `useDropFiles`.
  */
-/**
- * A hook that creates a clickable dropzone for files. This is a convenience
- * wrapper around `useSelectFiles` and `useDropFiles`.
- */
 export function useDropzone(options: {
 	/**
 	 * Sets or retrieves a comma-separated list of content types.
@@ -704,7 +706,6 @@ async function createSelectedFile(file: File, key?: Key) {
 	const data = {
 		key: `${(k ?? (file.webkitRelativePath || file.name)).replace(/^\//, "")}`,
 		file,
-		source: URL.createObjectURL(file),
 	};
 
 	const bytesUploaded = atom(0);
@@ -1012,7 +1013,7 @@ export function useUploadFiles() {
 }
 
 /**
- * A hook that returns the raw file `File` object from a selected file, the key, and the source.
+ * A hook that returns the raw file `File` object from a selected file and the key.
  * @param selectedFile - A selected file
  */
 export function useSelectedFile(selectedFile: SelectedFile) {
@@ -1021,9 +1022,8 @@ export function useSelectedFile(selectedFile: SelectedFile) {
 		() => ({
 			key: file.key,
 			file: file.file,
-			source: file.source,
 		}),
-		[file.file, file.key, file.source],
+		[file.file, file.key],
 	);
 }
 
@@ -1267,11 +1267,6 @@ export type ProgressData = {
 
 export type SelectedFileData = {
 	/**
-	 * The source of the file as a string if the file is less than 15MB in size,
-	 * otherwise `null`. This is useful for generating previews.
-	 */
-	source: null | string;
-	/**
 	 * The path on the server to upload the file to
 	 */
 	key: string;
@@ -1298,9 +1293,7 @@ export type SelectedFileData = {
 	 * - `"success"`: the file has been successfully uploaded
 	 * - `"error"`: an error occurred during the upload and it did not finish
 	 */
-	status: PrimitiveAtom<
-		"idle" | "queued" | "uploading" | "aborted" | "success" | "error"
-	>;
+	status: PrimitiveAtom<SelectedFileStatus>;
 	/**
 	 * Timestamp when the upload started
 	 */
@@ -1327,6 +1320,14 @@ export type SelectFilesCallback = (options?: {
 	 */
 	key?: Key;
 }) => void;
+
+export type SelectedFileStatus =
+	| "idle"
+	| "queued"
+	| "uploading"
+	| "aborted"
+	| "success"
+	| "error";
 
 export type SelectDirectoryCallback = SelectFilesCallback;
 

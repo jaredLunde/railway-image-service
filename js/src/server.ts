@@ -34,6 +34,10 @@ export class ImageServiceClient {
 		return fetch(url.toString(), { ...init, headers });
 	}
 
+	/**
+	 * Get a signed URL for a path.
+	 * @param path - The path to get a signed URL for
+	 */
 	async sign(path: string): Promise<string> {
 		if (this.signatureSecretKey) {
 			const url = new URL(path, this.baseURL);
@@ -44,6 +48,10 @@ export class ImageServiceClient {
 		return response.text();
 	}
 
+	/**
+	 * Get a file from blob storage.
+	 * @param key - The key to get from blob storage
+	 */
 	async get(key: string): Promise<Response> {
 		const response = await this.fetch(`/blob/${key}`);
 		if (response.status !== 200) {
@@ -52,6 +60,11 @@ export class ImageServiceClient {
 		return response;
 	}
 
+	/**
+	 * Put a file into blob storage.
+	 * @param key - The key to use in blob storage.
+	 * @param content - The content of the file.
+	 */
 	async put(
 		key: string,
 		content: ReadableStream | Buffer | ArrayBuffer,
@@ -62,10 +75,18 @@ export class ImageServiceClient {
 		});
 	}
 
+	/**
+	 * Delete a file in blob storage.
+	 * @param key - The key to delete in blob storage.
+	 */
 	async delete(key: string): Promise<Response> {
 		return this.fetch(`/blob/${key}`, { method: "DELETE" });
 	}
 
+	/**
+	 * List keys in blob storage.
+	 * @param options - List options
+	 */
 	async list(options: ListOptions = {}): Promise<ListResult> {
 		const params = new URLSearchParams();
 
