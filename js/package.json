@@ -1,7 +1,7 @@
 {
 	"name": "railway-image-service",
 	"version": "0.1.0",
-	"description": "JavaScript and React packages for the railway-image-service template",
+	"description": "JavaScript and React packages for the railway-image-service Railway template",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/jaredLunde/railway-image-service.git"
@@ -42,11 +42,15 @@
 		"typescript": "^5.7.2",
 		"vitest": "^2.1.8"
 	},
+	"peerDependencies": {
+		"jotai": "^2.0.0"
+	},
 	"scripts": {
 		"build": "tsup",
 		"dev": "tsup --watch",
 		"check": "npm run check:types",
 		"check:types": "tsc --noEmit --incremental --tsBuildInfoFile .typescript/tsconfig.tsbuildinfo",
+		"prepublishOnly": "npm run check:types && npm run build",
 		"test": "vitest"
 	}
 }
