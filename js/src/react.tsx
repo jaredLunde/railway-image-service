@@ -2,12 +2,7 @@
 
 import type { Atom, ExtractAtomValue, PrimitiveAtom } from "jotai";
 import { createStore } from "jotai";
-import {
-	atom,
-	useAtomValue,
-	useSetAtom,
-	Provider as JotaiProvider,
-} from "jotai";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 import {
 	createContext,
 	useContext,
@@ -58,7 +53,7 @@ export function Provider({
 }: RailwayImagesContextType & { children: React.ReactNode }) {
 	return (
 		<RailwayImagesContext.Provider value={props}>
-			<JotaiProvider store={filesStore}>{children}</JotaiProvider>
+			{children}
 		</RailwayImagesContext.Provider>
 	);
 }
