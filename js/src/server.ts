@@ -453,7 +453,7 @@ class ImageUrlBuilder {
 	 * @throws Error if no image source is specified
 	 */
 	private buildPath(): string {
-		const segments: string[] = [];
+		const segments: string[] = ["serve"];
 
 		// Add transformations
 		if (

@@ -123,7 +123,7 @@ describe("ImageUrlBuilder", () => {
 	it("should build basic image URL with key", async () => {
 		const url = await imageUrlBuilder(mockClient).key("test-image.jpg");
 
-		expect(url).toBe("/signed/blob/test-image.jpg");
+		expect(url).toBe("/signed/serve/blob/test-image.jpg");
 	});
 
 	it("should build basic image URL with external URL", async () => {
@@ -131,7 +131,7 @@ describe("ImageUrlBuilder", () => {
 			"https://example.com/image.jpg",
 		);
 
-		expect(url).toBe("/signed/url/https%3A%2F%2Fexample.com%2Fimage.jpg");
+		expect(url).toBe("/signed/serve/url/https%3A%2F%2Fexample.com%2Fimage.jpg");
 	});
 
 	it("should handle resize operations", async () => {
@@ -139,7 +139,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.size(300, 200);
 
-		expect(url).toBe("/signed/300x200/blob/test.jpg");
+		expect(url).toBe("/signed/serve/300x200/blob/test.jpg");
 	});
 
 	it("should handle fit modes", async () => {
@@ -148,7 +148,9 @@ describe("ImageUrlBuilder", () => {
 			.size(300, 200)
 			.fit("contain");
 
-		expect(url).toBe("/signed/fit-in/300x200/center/middle/blob/test.jpg");
+		expect(url).toBe(
+			"/signed/serve/fit-in/300x200/center/middle/blob/test.jpg",
+		);
 	});
 
 	it("should handle complex transformations", async () => {
@@ -161,7 +163,7 @@ describe("ImageUrlBuilder", () => {
 			.align("left", "top");
 
 		expect(url).toBe(
-			"/signed/trim/fit-in/300x200/left/top/smart/blob/test.jpg",
+			"/signed/serve/trim/fit-in/300x200/left/top/smart/blob/test.jpg",
 		);
 	});
 
@@ -170,7 +172,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop(10, 20, 100, 100);
 
-		expect(url).toBe("/signed/10x20:110x120/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10x20:110x120/blob/test.jpg");
 	});
 
 	it("should handle percentage-based crop operations", async () => {
@@ -178,7 +180,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop("10%", "20%", "50%", "30%");
 
-		expect(url).toBe("/signed/10%x20%:60%x50%/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10%x20%:60%x50%/blob/test.jpg");
 	});
 
 	it("should handle mixed percentage and pixel crop operations for x coordinates", async () => {
@@ -186,7 +188,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop("10%", 20, "50%", 100);
 
-		expect(url).toBe("/signed/10%x20:60%x120/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10%x20:60%x120/blob/test.jpg");
 	});
 
 	it("should handle mixed percentage and pixel crop operations for y coordinates", async () => {
@@ -194,7 +196,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop(10, "20%", 100, "30%");
 
-		expect(url).toBe("/signed/10x20%:110x50%/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10x20%:110x50%/blob/test.jpg");
 	});
 
 	it("should handle percentage in width only", async () => {
@@ -202,7 +204,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop(10, 20, "50%", 100);
 
-		expect(url).toBe("/signed/10x20:60%x120/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10x20:60%x120/blob/test.jpg");
 	});
 
 	it("should handle percentage in height only", async () => {
@@ -210,7 +212,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop(10, 20, 100, "30%");
 
-		expect(url).toBe("/signed/10x20:110x50%/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10x20:110x50%/blob/test.jpg");
 	});
 
 	it("should handle mixed pixel and percentage crop operations", async () => {
@@ -218,7 +220,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.crop("10%", 20, "50%", 100);
 
-		expect(url).toBe("/signed/10%x20:60%x120/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10%x20:60%x120/blob/test.jpg");
 	});
 
 	it("should handle flip operations", async () => {
@@ -227,7 +229,7 @@ describe("ImageUrlBuilder", () => {
 			.size(300, 200)
 			.flip("both");
 
-		expect(url).toBe("/signed/-300x-200/blob/test.jpg");
+		expect(url).toBe("/signed/serve/-300x-200/blob/test.jpg");
 	});
 
 	it("should handle padding operations", async () => {
@@ -235,7 +237,7 @@ describe("ImageUrlBuilder", () => {
 			.key("test.jpg")
 			.padding(10, 20, 30, 40);
 
-		expect(url).toBe("/signed/10x20:30x40/center/middle/blob/test.jpg");
+		expect(url).toBe("/signed/serve/10x20:30x40/center/middle/blob/test.jpg");
 	});
 
 	it("should handle filters", async () => {
@@ -250,7 +252,7 @@ describe("ImageUrlBuilder", () => {
 			});
 
 		expect(url).toBe(
-			"/signed/filters:quality(80):brightness(10):contrast(20):rgb(100,-50,25):round_corner(10,10,fff)/blob/test.jpg",
+			"/signed/serve/filters:quality(80):brightness(10):contrast(20):rgb(100,-50,25):round_corner(10,10,fff)/blob/test.jpg",
 		);
 	});
 
@@ -264,7 +266,7 @@ describe("ImageUrlBuilder", () => {
 		const builder = imageUrlBuilder(mockClient).key("test.jpg");
 		const url = await builder;
 
-		expect(url).toBe("/signed/blob/test.jpg");
+		expect(url).toBe("/signed/serve/blob/test.jpg");
 	});
 
 	it("should handle error cases with promise methods", async () => {
@@ -280,7 +282,7 @@ describe("ImageUrlBuilder", () => {
 		);
 
 		expect(url).toBe(
-			"/signed/url/https%3A%2F%2Fexample.com%2Fimage%20with%20spaces.jpg%3Fparam%3Dvalue",
+			"/signed/serve/url/https%3A%2F%2Fexample.com%2Fimage%20with%20spaces.jpg%3Fparam%3Dvalue",
 		);
 	});
 });
