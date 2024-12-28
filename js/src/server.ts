@@ -358,14 +358,17 @@ class ImageUrlBuilder {
 	 * @param filters - Additional filter settings
 	 * @returns The builder instance for chaining
 	 */
-	avatar(size: number, filters: Partial<ImageFilters>): this {
-		return this.fit("cover").smart().filter({
-			upscale: true,
-			quality: 80,
-			strip_exif: true,
-			strip_metadata: true,
-			strip_icc: true,
-		});
+	avatar(size: number, filters?: Partial<ImageFilters>): this {
+		return this.fit("cover")
+			.smart()
+			.filter({
+				upscale: true,
+				quality: 80,
+				strip_exif: true,
+				strip_metadata: true,
+				strip_icc: true,
+				...filters,
+			});
 	}
 
 	/**
