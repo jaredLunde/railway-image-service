@@ -6,6 +6,7 @@
 		"dev": "astro dev",
 		"build": "astro build",
 		"preview": "astro preview",
+		"start": "HOST=0.0.0.0 PORT=4321 node ./dist/server/entry.mjs",
 		"astro": "astro",
 		"check:types": "tsc --noEmit --incremental --tsBuildInfoFile .typescript/tsconfig.tsbuildinfo"
 	},
