@@ -203,11 +203,11 @@ class ImageUrlBuilder {
 
 	/**
 	 * Sets the image source using a storage key.
-	 * @param value - The storage key identifying the image
+	 * @param blobKey - The storage key identifying the image
 	 * @returns The builder instance for chaining
 	 */
-	key(value: string): this {
-		this.imageSource = { type: "key", value };
+	key(blobKey: string): this {
+		this.imageSource = { type: "key", value: blobKey };
 		return this;
 	}
 
@@ -216,8 +216,8 @@ class ImageUrlBuilder {
 	 * @param value - The URL of the source image
 	 * @returns The builder instance for chaining
 	 */
-	url(value: string): this {
-		this.imageSource = { type: "url", value };
+	url(httpUrl: string): this {
+		this.imageSource = { type: "url", value: httpUrl };
 		return this;
 	}
 

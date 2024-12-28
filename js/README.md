@@ -139,7 +139,7 @@ const url = await imageUrlBuilder(client)
 
 // Complex transformation
 const url = await imageUrlBuilder(client)
-	.key("my-image-key")
+	.key("my-image-key.jpg")
 	.size(1200, 800)
 	.fit("cover")
 	.trim()
@@ -163,21 +163,21 @@ const url = await imageUrlBuilder(client)
 
 ### Image Source Methods
 
-#### `.key(value)`
+#### `.key(blobKey)`
 
-Sets the image source using a storage key.
+Sets the image source using a blob storage key.
 
-| Name    | Type     | Required? | Description                            |
-| ------- | -------- | --------- | -------------------------------------- |
-| `value` | `string` | Yes       | The storage key identifying the image. |
+| Name      | Type     | Required? | Description                            |
+| --------- | -------- | --------- | -------------------------------------- |
+| `blobKey` | `string` | Yes       | The storage key identifying the image. |
 
-#### `.url(value)`
+#### `.url(httpUrl)`
 
 Sets the image source using a URL.
 
-| Name    | Type     | Required? | Description                  |
-| ------- | -------- | --------- | ---------------------------- |
-| `value` | `string` | Yes       | The URL of the source image. |
+| Name      | Type     | Required? | Description                  |
+| --------- | -------- | --------- | ---------------------------- |
+| `httpUrl` | `string` | Yes       | The URL of the source image. |
 
 ### Dimension Methods
 
