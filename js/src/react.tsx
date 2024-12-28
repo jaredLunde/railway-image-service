@@ -1,8 +1,7 @@
 "use client";
 
 import type { Atom, ExtractAtomValue, PrimitiveAtom } from "jotai";
-import { createStore } from "jotai";
-import { atom, useAtomValue, useSetAtom } from "jotai";
+import { createStore, atom, useAtomValue, useSetAtom } from "jotai";
 import {
 	createContext,
 	useContext,

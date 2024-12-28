@@ -15,7 +15,9 @@ ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-RUN DEBIAN_FRONTEND=noninteractive \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  DEBIAN_FRONTEND=noninteractive \
   apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates \
@@ -46,14 +48,17 @@ RUN DEBIAN_FRONTEND=noninteractive \
   rm -rf /usr/local/lib/*.la
 
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN --mount=type=cache,target=/go/pkg/mod \
+  GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app
 LABEL maintainer="jared.lunde@gmail.com"
 COPY --from=build /usr/local/lib /usr/local/lib
 
-RUN DEBIAN_FRONTEND=noninteractive \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  DEBIAN_FRONTEND=noninteractive \
   apt-get update && \
   apt-get install --no-install-recommends -y \
   ca-certificates procps libglib2.0-0 libjpeg62-turbo libpng16-16 libopenexr-3-1-30 \
