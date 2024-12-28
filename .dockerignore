@@ -5,3 +5,11 @@
 /js
 # Demo site
 /web
+# Git
+.git
+.gitignore
+# Other
+README.md
+*.md
+*.toml
+*.jsonc
