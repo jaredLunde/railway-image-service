@@ -115,6 +115,223 @@ Get a signed URL for a path.
 
 A signed URL for the given path.
 
+### `imageUrlBuilder()`
+
+Creates a fluent builder for constructing image transformation URLs. Supports chaining of operations for resizing, cropping, filtering, and other image manipulations.
+
+**Arguments**
+
+| Name     | Type                 | Required? | Description                                          |
+| -------- | -------------------- | --------- | ---------------------------------------------------- |
+| `client` | `ImageServiceClient` | Yes       | The image service client instance used to sign URLs. |
+
+**Returns**
+
+An `ImageUrlBuilder` instance that supports method chaining.
+
+**Examples**
+
+```ts
+// Basic image resize
+const url = await imageUrlBuilder(client)
+	.url("https://example.com/image.jpg")
+	.size(200);
+
+// Complex transformation
+const url = await imageUrlBuilder(client)
+	.key("my-image-key")
+	.size(1200, 800)
+	.fit("cover")
+	.trim()
+	.filter({
+		quality: 85,
+		brightness: 10,
+		format: "webp",
+	});
+
+// Smart cropping with focal point
+const url = await imageUrlBuilder(client)
+	.url("https://example.com/portrait.jpg")
+	.size(400, 400)
+	.smart()
+	.filter({
+		focal: "300,400",
+		format: "jpeg",
+		quality: 90,
+	});
+```
+
+### Image Source Methods
+
+#### `.key(value)`
+
+Sets the image source using a storage key.
+
+| Name    | Type     | Required? | Description                            |
+| ------- | -------- | --------- | -------------------------------------- |
+| `value` | `string` | Yes       | The storage key identifying the image. |
+
+#### `.url(value)`
+
+Sets the image source using a URL.
+
+| Name    | Type     | Required? | Description                  |
+| ------- | -------- | --------- | ---------------------------- |
+| `value` | `string` | Yes       | The URL of the source image. |
+
+### Dimension Methods
+
+#### `.width(value)`
+
+Sets the target width of the output image.
+
+| Name    | Type     | Required? | Description      |
+| ------- | -------- | --------- | ---------------- |
+| `value` | `number` | Yes       | Width in pixels. |
+
+#### `.height(value)`
+
+Sets the target height of the output image.
+
+| Name    | Type     | Required? | Description       |
+| ------- | -------- | --------- | ----------------- |
+| `value` | `number` | Yes       | Height in pixels. |
+
+#### `.size(width, height?)`
+
+Sets both width and height of the output image.
+
+| Name     | Type     | Required? | Description                                     |
+| -------- | -------- | --------- | ----------------------------------------------- |
+| `width`  | `number` | Yes       | Width in pixels.                                |
+| `height` | `number` | No        | Height in pixels. Defaults to width if omitted. |
+
+### Transform Methods
+
+#### `.fit(value)`
+
+Sets the fit mode for image resizing.
+
+| Name    | Type       | Required? | Description          |
+| ------- | ---------- | --------- | -------------------- |
+| `value` | `ImageFit` | Yes       | The fit mode to use. |
+
+**ImageFit Options**
+
+- `"cover"`: Scales to fill the entire box, cropping if necessary
+- `"contain"`: Scales to fit within the box while maintaining aspect ratio
+- `"stretch"`: Stretches or compresses to exactly fill the box
+- `"contain-stretch"`: Combines contain and stretch modes
+
+#### `.flip(direction)`
+
+Flips the image horizontally, vertically, or both.
+
+| Name        | Type                                   | Required? | Description            |
+| ----------- | -------------------------------------- | --------- | ---------------------- |
+| `direction` | `"horizontal" \| "vertical" \| "both"` | Yes       | The direction to flip. |
+
+#### `.crop(x, y, width, height)`
+
+Crops the image to a specified region.
+
+| Name     | Type               | Required? | Description                                     |
+| -------- | ------------------ | --------- | ----------------------------------------------- |
+| `x`      | `number \| string` | Yes       | Left coordinate (pixels or percentage with '%') |
+| `y`      | `number \| string` | Yes       | Top coordinate (pixels or percentage with '%')  |
+| `width`  | `number \| string` | Yes       | Width of crop (pixels or percentage with '%')   |
+| `height` | `number \| string` | Yes       | Height of crop (pixels or percentage with '%')  |
+
+#### `.padding(left, top, right, bottom)`
+
+Adds padding around the image.
+
+| Name     | Type     | Required? | Description              |
+| -------- | -------- | --------- | ------------------------ |
+| `left`   | `number` | Yes       | Left padding in pixels   |
+| `top`    | `number` | Yes       | Top padding in pixels    |
+| `right`  | `number` | Yes       | Right padding in pixels  |
+| `bottom` | `number` | Yes       | Bottom padding in pixels |
+
+#### `.trim(enable?)`
+
+Enables trim mode to remove surrounding space.
+
+| Name     | Type      | Required? | Description                           |
+| -------- | --------- | --------- | ------------------------------------- |
+| `enable` | `boolean` | No        | Whether to enable trim. Default: true |
+
+#### `.smart(enable?)`
+
+Enables smart detection of focal points for cropping.
+
+| Name     | Type      | Required? | Description                                      |
+| -------- | --------- | --------- | ------------------------------------------------ |
+| `enable` | `boolean` | No        | Whether to enable smart detection. Default: true |
+
+#### `.align(horizontal?, vertical?)`
+
+Sets the alignment for cropping and fitting operations.
+
+| Name         | Type                            | Required? | Description          |
+| ------------ | ------------------------------- | --------- | -------------------- |
+| `horizontal` | `"left" \| "center" \| "right"` | No        | Horizontal alignment |
+| `vertical`   | `"top" \| "middle" \| "bottom"` | No        | Vertical alignment   |
+
+### Filter Methods
+
+#### `.filter(filters)`
+
+Applies image filters like blur, brightness, contrast, etc.
+
+| Name      | Type           | Required? | Description                       |
+| --------- | -------------- | --------- | --------------------------------- |
+| `filters` | `ImageFilters` | Yes       | Object containing filter settings |
+
+**ImageFilters Options**
+
+| Name               | Type                       | Description                                    |
+| ------------------ | -------------------------- | ---------------------------------------------- |
+| `background_color` | `string`                   | Sets background color for transparent images   |
+| `blur`             | `number`                   | Applies Gaussian blur (sigma value)            |
+| `brightness`       | `number`                   | Adjusts brightness (-100 to 100)               |
+| `contrast`         | `number`                   | Adjusts contrast (-100 to 100)                 |
+| `fill`             | `string`                   | Fills transparent areas (color/blur/auto/none) |
+| `format`           | `ImageFormat`              | Sets output format                             |
+| `grayscale`        | `boolean`                  | Converts to grayscale                          |
+| `hue`              | `number`                   | Rotates the hue (0-360 degrees)                |
+| `orient`           | `Angle`                    | Sets image orientation                         |
+| `proportion`       | `number`                   | Scales image by percentage                     |
+| `quality`          | `number`                   | Sets JPEG quality (0-100)                      |
+| `rgb`              | `[number, number, number]` | Adjusts RGB channels (-100 to 100 each)        |
+| `rotate`           | `Angle`                    | Rotates image by fixed angles                  |
+| `saturation`       | `number`                   | Adjusts color saturation (-100 to 100)         |
+| `sharpen`          | `number`                   | Applies sharpening effect                      |
+| `focal`            | `string`                   | Sets focal point for cropping                  |
+| `round_corner`     | `object`                   | Adds rounded corners                           |
+| `max_bytes`        | `number`                   | Limits output file size                        |
+| `max_frames`       | `number`                   | Limits animation frames                        |
+| `page`             | `number`                   | Selects specific page/frame                    |
+| `dpi`              | `number`                   | Sets DPI for vector formats                    |
+| `strip_exif`       | `boolean`                  | Removes EXIF metadata                          |
+| `strip_icc`        | `boolean`                  | Removes ICC profile                            |
+| `strip_metadata`   | `boolean`                  | Removes all metadata                           |
+| `upscale`          | `boolean`                  | Allows upscaling with fit-in                   |
+| `attachment`       | `string`                   | Sets download filename                         |
+| `expire`           | `number`                   | Sets content expiration                        |
+| `preview`          | `boolean`                  | Skips result storage                           |
+| `raw`              | `boolean`                  | Returns unprocessed image                      |
+
+### Build Methods
+
+#### `.build()`
+
+Builds and signs the final URL for the image transformation.
+
+**Returns**
+
+A promise that resolves to the signed URL string.
+
 ---
 
 ## React API
@@ -131,44 +348,6 @@ Provides configuration to its child hooks and components.
 | --------------- | -------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `url`           | `string \| {get: string; put: string}` | Yes       | The base URL where blob storage (PUT) and serve (GET) requests will be sent. Your file blob `key` will be joined to this URL. |
 | `maxUploadSize` | `number`                               | No        | The maximum size of an image that can be uploaded in bytes.                                                                   |
-
-#### `<Image>`
-
-A React component that generates an image URL using the Thumbor URL specification and
-creates an `img` element with the generated URL.
-
-The URL is constructed in the following order:
-`/trim/AxB:CxD/fit-in/stretch/-Ex-F/GxH:IxJ/HALIGN/VALIGN/smart/filters/IMAGE`
-
-**Example**
-
-```tsx
-<Image
-	srcKey="image.jpg"
-	width={400}
-	height={300}
-	fit="contain"
-	transform={{
-		smart: true,
-		flip: "horizontal",
-	}}
-/>;
-```
-
-**Props**
-
-See the [Imagor documentation](https://github.com/cshum/imagor/blob/e8b9c7c731a1ce65368f20745f5064d3f1083ac1/README.md#image-endpoint) for
-filter and transform-specific documentation.
-
-| Name        | Type             | Required? | Description                                                                                      |
-| ----------- | ---------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| `src`       | `string`         | No        | An image URL from the Internet to process and serve (e.g. https://github.com/jaredLunde.png)     |
-| `srcKey`    | `string`         | No        | A key from blob storage to process and serve (e.g. your-image.png)                               |
-| `fit`       | `ImageFit`       | No        | How image should fit within target dimensions (`cover`, `contain`, `stretch`, `contain-stretch`) |
-| `transform` | `ImageTransform` | No        | Apply image transformations                                                                      |
-| `filters`   | `ImageFilters`   | No        | Apply filters to the image                                                                       |
-
-#### `<Avatar>`
 
 ### Hooks
 
