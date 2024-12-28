@@ -353,6 +353,22 @@ class ImageUrlBuilder {
 	}
 
 	/**
+	 * Applies image filters to optimize for avatars.
+	 * @param size - The target size of the avatar
+	 * @param filters - Additional filter settings
+	 * @returns The builder instance for chaining
+	 */
+	avatar(size: number, filters: Partial<ImageFilters>): this {
+		return this.fit("cover").smart().filter({
+			upscale: true,
+			quality: 80,
+			strip_exif: true,
+			strip_metadata: true,
+			strip_icc: true,
+		});
+	}
+
+	/**
 	 * Builds the filter string portion of the URL.
 	 * Converts the filter settings into the appropriate URL format.
 	 * @private

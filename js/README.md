@@ -132,13 +132,27 @@ An `ImageUrlBuilder` instance that supports method chaining.
 **Examples**
 
 ```ts
+import {
+	ImageServiceClient,
+	imageUrlBuilder,
+} from "railway-image-service/server";
+
+const client = new ImageServiceClient({
+	url: process.env.IMAGE_SERVICE_URL,
+	secretKey: process.env.IMAGE_SERVICE_SECRET_KEY,
+	signatureSecretKey: process.env.IMAGE_SERVICE_SIGNATURE_SECRET_KEY,
+});
+
+const builder = imageUrlBuilder(client);
+
 // Basic image resize
-const url = await imageUrlBuilder(client)
-	.url("https://example.com/image.jpg")
-	.size(200);
+const url = await builder.url("https://github.com/railwayapp.png").size(48);
+
+// Avatar generation
+const url = await builder.avatar(48, { quality: 90 });
 
 // Complex transformation
-const url = await imageUrlBuilder(client)
+const url = await builder
 	.key("my-image-key.jpg")
 	.size(1200, 800)
 	.fit("cover")
@@ -150,7 +164,7 @@ const url = await imageUrlBuilder(client)
 	});
 
 // Smart cropping with focal point
-const url = await imageUrlBuilder(client)
+const url = await builder
 	.url("https://example.com/portrait.jpg")
 	.size(400, 400)
 	.smart()
@@ -178,6 +192,27 @@ Sets the image source using a URL.
 | Name      | Type     | Required? | Description                  |
 | --------- | -------- | --------- | ---------------------------- |
 | `httpUrl` | `string` | Yes       | The URL of the source image. |
+
+### Avatar generation
+
+#### `.avatar(size, filters)`
+
+Applies optimized image filters and transformations for avatar images. Automatically enables smart cropping, cover fitting, and metadata stripping.
+
+| Name      | Type           | Required? | Description                                   |
+| --------- | -------------- | --------- | --------------------------------------------- |
+| `size`    | `number`       | Yes       | Target size for the avatar (width and height) |
+| `filters` | `ImageFilters` | Yes       | Additional filter settings to apply           |
+
+**Default Settings**
+
+- `fit`: `"cover"`
+- `smart`: `true`
+- `upscale`: `true`
+- `quality`: `80`
+- `strip_exif`: `true`
+- `strip_metadata`: `true`
+- `strip_icc`: `true`
 
 ### Dimension Methods
 
