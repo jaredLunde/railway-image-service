@@ -360,6 +360,7 @@ class ImageUrlBuilder {
 	 */
 	avatar(size: number, filters?: Partial<ImageFilters>): this {
 		return this.fit("cover")
+			.size(size)
 			.smart()
 			.filter({
 				upscale: true,
