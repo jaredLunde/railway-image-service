@@ -4,7 +4,7 @@ This is a demo of the Railway Image Service. It's a simple service that allows y
 
 ## Where to look
 
-- [pages/\[size\]/\[...path\].ts](pages/%5Bsize%5D/%5B...path%5D.ts) - An endpoint that resizes images on the fly
-- [pages/upload/\[...path\].ts](pages/upload/%5B...path%5D.ts) - An endpoint that allows users to upload images with signed URLs
-- [components/Uploader.tsx](components/Uploader.tsx) - A React component that allows users to upload images
-- [pages/index.astro](pages/index.astro) - The gallery page which demonstrates generating image URLs with the image URL builder in an Astro component
+- [src/pages/\[size\]/\[...path\].ts](src/pages/%5Bsize%5D/%5B...path%5D.ts) - An endpoint that resizes images on the fly
+- [src/pages/upload/\[...path\].ts](src/pages/upload/%5B...path%5D.ts) - An endpoint that allows users to upload images with signed URLs
+- [src/components/Uploader.tsx](src/components/Uploader.tsx) - A React component that allows users to upload images
+- [src/pages/index.astro](src/pages/index.astro) - The gallery page which demonstrates generating image URLs with the image URL builder in an Astro component
