@@ -1,0 +1,32 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Uploader } from "../components/Uploader";
+import {
+  ImageServiceClient,
+  imageUrlBuilder,
+} from "railway-image-service/server";
+const client = new ImageServiceClient({
+  url: import.meta.env.IMAGE_SERVICE_URL,
+  secretKey: import.meta.env.IMAGE_SERVICE_SECRET_KEY,
+  signatureSecretKey: import.meta.env.IMAGE_SERVICE_SIGNATURE_SECRET_KEY,
+});
+
+const builder = imageUrlBuilder(client);
+---
+
+<Layout>
+  <header
+    class="w-full h-12 flex items-center px-6 border-b border-b-gray-100 gap-x-2 font-medium"
+  >
+    <img
+      src={builder.url("https://github.com/railwayapp.png").avatar(48).build()}
+      width={32}
+      height={32}
+      class="rounded-full"
+    />
+    Railway Image Service
+  </header>
+  <div class="p-6 flex gap-12 items-start">
+    <Uploader client:load />
+  </div>
+</Layout>
