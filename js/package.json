@@ -1,6 +1,6 @@
 {
 	"name": "railway-image-service",
-	"version": "0.1.5",
+	"version": "0.1.6",
 	"description": "JavaScript and React packages for the railway-image-service Railway template",
 	"repository": {
 		"type": "git",

@@ -257,7 +257,7 @@ describe("ImageUrlBuilder", () => {
 	});
 
 	it("should throw error when no image source is specified", async () => {
-		await expect(imageUrlBuilder(mockClient).build()).rejects.toThrow(
+		await expect(imageUrlBuilder(mockClient).buildRemote()).rejects.toThrow(
 			"Image source (key or url) must be specified",
 		);
 	});
@@ -284,5 +284,28 @@ describe("ImageUrlBuilder", () => {
 		expect(url).toBe(
 			"/signed/serve/url/https%3A%2F%2Fexample.com%2Fimage%20with%20spaces.jpg%3Fparam%3Dvalue",
 		);
+	});
+
+	it("should build locally without a promise", () => {
+		const client = new ImageServiceClient({
+			url: "http://example.com",
+			secretKey: "secret",
+			signatureSecretKey: "signing-secret",
+		});
+
+		const url = imageUrlBuilder(client).key("test.jpg");
+		expect(url + "").toBe(
+			"http://example.com/serve/blob/test.jpg?x-signature=XexJTXNY3MapuNMAdM1OeHvZEcM8bWlTp6AksH88fK4",
+		);
+	});
+
+	it("should fail to build locally without a signatureSecretKey", () => {
+		const client = new ImageServiceClient({
+			url: "http://example.com",
+			secretKey: "secret",
+		});
+
+		const url = imageUrlBuilder(client).key("test.jpg");
+		expect(() => url + "").toThrow(/required/);
 	});
 });

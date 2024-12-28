@@ -11,9 +11,9 @@ export type ClientOptions = {
 };
 
 export class ImageServiceClient {
-	private baseURL: URL;
-	private secretKey: string;
-	private signatureSecretKey?: string;
+	baseURL: URL;
+	secretKey: string;
+	signatureSecretKey?: string;
 
 	constructor(options: ClientOptions) {
 		if (!options.url) {
@@ -544,7 +544,7 @@ class ImageUrlBuilder {
 	 * @returns A promise that resolves to the signed URL
 	 * @throws Error if no image source is specified
 	 */
-	async build(): Promise<string> {
+	async buildRemote(): Promise<string> {
 		if (!this.imageSource) {
 			throw new Error("Image source (key or url) must be specified");
 		}
@@ -554,13 +554,40 @@ class ImageUrlBuilder {
 	}
 
 	/**
+	 * Builds and signs the URL locally without making a request to the server.
+	 * This negates the need for a promise and can be used directly in the server
+	 * components for frameworks like Astro.
+	 */
+	build(): string {
+		if (!this.imageSource) {
+			throw new Error("Image source (key or url) must be specified");
+		}
+
+		if (!this.client.signatureSecretKey) {
+			throw new Error(
+				"`signatureSecretKey` is required in your client for local signing",
+			);
+		}
+
+		const path = this.buildPath();
+		return signUrl(
+			new URL(path, this.client.baseURL),
+			this.client.signatureSecretKey,
+		);
+	}
+
+	toString(): string {
+		return this.build();
+	}
+
+	/**
 	 * Implements the Promise interface to allow direct await of the builder.
 	 */
 	then<TResult1 = string, TResult2 = never>(
 		onfulfilled?: ((value: string) => TResult1 | PromiseLike<TResult1>) | null,
 		onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
 	): Promise<TResult1 | TResult2> {
-		return this.build().then(onfulfilled, onrejected);
+		return this.buildRemote().then(onfulfilled, onrejected);
 	}
 
 	/**
@@ -569,14 +596,14 @@ class ImageUrlBuilder {
 	catch<TResult = never>(
 		onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null,
 	): Promise<string | TResult> {
-		return this.build().catch(onrejected);
+		return this.buildRemote().catch(onrejected);
 	}
 
 	/**
 	 * Implements the Promise finally method.
 	 */
 	finally(onfinally?: (() => void) | null): Promise<string> {
-		return this.build().finally(onfinally);
+		return this.buildRemote().finally(onfinally);
 	}
 }
 

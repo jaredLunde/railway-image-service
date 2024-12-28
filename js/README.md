@@ -146,12 +146,37 @@ const client = new ImageServiceClient({
 const builder = imageUrlBuilder(client);
 
 // Basic image resize
-const url = await builder.url("https://github.com/railwayapp.png").size(48);
+const url = builder.url("https://github.com/railwayapp.png").size(48).build();
 
 // Avatar generation
-const url = await builder.avatar(48, { quality: 90 });
+const url = builder.avatar(48, { quality: 90 }).build();
 
 // Complex transformation
+const url = builder
+	.key("my-image-key.jpg")
+	.size(1200, 800)
+	.fit("cover")
+	.trim()
+	.filter({
+		quality: 85,
+		brightness: 10,
+		format: "webp",
+	})
+	.build();
+
+// Smart cropping with focal point
+const url = builder
+	.url("https://example.com/portrait.jpg")
+	.size(400, 400)
+	.smart()
+	.filter({
+		focal: "300,400",
+		format: "jpeg",
+		quality: 90,
+	})
+	.build();
+
+// Sign the URL remotely
 const url = await builder
 	.key("my-image-key.jpg")
 	.size(1200, 800)
@@ -161,17 +186,6 @@ const url = await builder
 		quality: 85,
 		brightness: 10,
 		format: "webp",
-	});
-
-// Smart cropping with focal point
-const url = await builder
-	.url("https://example.com/portrait.jpg")
-	.size(400, 400)
-	.smart()
-	.filter({
-		focal: "300,400",
-		format: "jpeg",
-		quality: 90,
 	});
 ```
 
@@ -359,13 +373,21 @@ Applies image filters like blur, brightness, contrast, etc.
 
 ### Build Methods
 
-#### `.build()`
+#### `.buildRemote()`
 
-Builds and signs the final URL for the image transformation.
+Builds and signs the final URL for the image transformation using the image service client API.
 
 **Returns**
 
 A promise that resolves to the signed URL string.
+
+#### `.build()`
+
+Builds and signs the final URL for the image transformation locally.
+
+**Returns**
+
+A signed URL string.
 
 ---
 
