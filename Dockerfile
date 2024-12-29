@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 ARG VERSION=1.23.1
-ARG BUILDPLATFORM=linux/amd64
+ARG BUILDPLATFORM
 ARG BUILDER=docker.io/library/golang
 
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:${VERSION} AS base
@@ -51,11 +51,11 @@ RUN cd /tmp && \
 
 FROM vips-builder AS build
 WORKDIR /go/src/app
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app

@@ -97,13 +97,33 @@ The service can be configured by setting the environment variables below.
 
 ### Server configuration
 
-| Environment Variable   | Description                                                                                 | Default |
-| ---------------------- | ------------------------------------------------------------------------------------------- | ------- |
-| `HOST`                 | The host the server listens on                                                              | `[::]`  |
-| `PORT`                 | The port the server listens on                                                              | `3000`  |
-| `REQUEST_TIMEOUT`      | The timeout for requests formatted as a Go duration                                         | `30s`   |
-| `CORS_ALLOWED_ORIGINS` | A comma-separated list of allowed origins for CORS requests, e.g. `https://your-domain.com` | `*`     |
-| `LOG_LEVEL`            | The log level for the server: `debug`, `info`, `warn`, and `error`.                         | `info`  |
+| Environment Variable   | Description                                                                                 | Default   |
+| ---------------------- | ------------------------------------------------------------------------------------------- | --------- |
+| `HOST`                 | The host the server listens on                                                              | `0.0.0.0` |
+| `PORT`                 | The port the server listens on                                                              | `3000`    |
+| `REQUEST_TIMEOUT`      | The timeout for requests formatted as a Go duration                                         | `30s`     |
+| `CORS_ALLOWED_ORIGINS` | A comma-separated list of allowed origins for CORS requests, e.g. `https://your-domain.com` | `*`       |
+| `LOG_LEVEL`            | The log level for the server: `debug`, `info`, `warn`, and `error`.                         | `info`    |
+
+---
+
+## Docker Compose
+
+Create a `docker-compose.yml` file with the following template:
+
+```yaml
+version: "3.8"
+services:
+  railway-image-service:
+    image: ghcr.io/jaredlunde/railway-image-service:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - SECRET_KEY=your_secret_key_here
+      - SIGNATURE_SECRET_KEY=your_signature_secret_key_here
+```
 
 ---
 

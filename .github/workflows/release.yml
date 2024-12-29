@@ -6,6 +6,11 @@ on:
       - "*"
     branches:
       - main
+    paths:
+      - "**/*.go"
+      - "**/Dockerfile"
+      - "go.mod"
+      - "go.sum"
 
 permissions:
   contents: write
@@ -50,6 +55,6 @@ jobs:
             TARGETARCH=${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64,linux/arm64/v8
           cache-from: type=gha
           cache-to: type=gha,mode=max
