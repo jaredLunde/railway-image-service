@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
 ARG VERSION=1.23.1
+ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/golang
 
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:${VERSION} AS base
@@ -8,22 +9,16 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 FROM base AS deps
 WORKDIR /go/src/app
 COPY go.mod* go.sum* ./
-RUN go mod download && go mod verify
+RUN go mod download && go mod tidy
 
 FROM deps AS vips-builder
 ARG VIPS_VERSION=8.16.0
-ARG TARGETOS
-ARG TARGETARCH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
-RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-        dpkg --add-architecture arm64; \
-    fi
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
     apt-get install --no-install-recommends -y \
     ca-certificates automake build-essential curl \
-    $([ "${TARGETARCH}" = "arm64" ] && echo "gcc-aarch64-linux-gnu") \
     meson ninja-build pkg-config \
     gobject-introspection gtk-doc-tools libglib2.0-dev \
     libjpeg62-turbo-dev libpng-dev libwebp-dev libtiff-dev \
@@ -56,20 +51,11 @@ RUN cd /tmp && \
 
 FROM vips-builder AS build
 WORKDIR /go/src/app
-ARG TARGETOS
-ARG TARGETARCH
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 COPY . .
-ENV GOOS=${TARGETOS}
-ENV GOARCH=${TARGETARCH}
-ENV CGO_ENABLED=1
-RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-        apt-get update && \
-        apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross && \
-        export CC=aarch64-linux-gnu-gcc; \
-        export CXX=aarch64-linux-gnu-g++; \
-        export CROSS_COMPILE=aarch64-linux-gnu-; \
-    fi
-RUN go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app

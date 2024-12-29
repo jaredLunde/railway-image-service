@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up QEMU # Add this step
-        uses: docker/setup-qemu-action@v3
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v3.3.0
         with:
@@ -52,6 +50,6 @@ jobs:
             TARGETARCH=${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
