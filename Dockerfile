@@ -8,7 +8,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 FROM base AS deps
 WORKDIR /go/src/app
 COPY go.mod* go.sum* ./
-RUN go mod download && go mod tidy
+RUN go mod download && go mod verify
 
 FROM deps AS vips-builder
 ARG VIPS_VERSION=8.16.0
@@ -55,18 +55,7 @@ WORKDIR /go/src/app
 ARG TARGETOS
 ARG TARGETARCH
 COPY . .
-RUN echo "Building for OS: $TARGETOS, ARCH: $TARGETARCH" && \
-    if [ "$TARGETARCH" = "arm64" ]; then \
-        echo "Setting ARM64 specific flags" && \
-        GOARCH=arm64 GOOS=linux \
-        CGO_ENABLED=1 CGO_CFLAGS_ALLOW=-Xpreprocessor \
-        CC="gcc -march=armv8-a" \
-        go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server; \
-    else \
-        echo "Building for AMD64" && \
-        CGO_ENABLED=1 \
-        go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server; \
-    fi
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=1 CC=${CC:-gcc} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app
