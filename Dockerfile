@@ -39,6 +39,7 @@ RUN cd /tmp && \
     --strip \
     --prefix=/usr/local \
     --libdir=lib \
+    --optimization=3 \
     -Dgtk_doc=false \
     -Dmagick=disabled \
     -Dintrospection=disabled && \
@@ -90,7 +91,9 @@ RUN addgroup --system nonroot && \
 ENV VIPS_WARNING=0 \
     MALLOC_ARENA_MAX=2 \
     LD_PRELOAD=/usr/local/lib/libjemalloc.so \
-    PORT=8080
+    PORT=8080 \
+    GOGC=100 \
+    GOMAXPROCS=4
 
 EXPOSE ${PORT}
 USER nonroot:nonroot
