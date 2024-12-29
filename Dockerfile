@@ -63,6 +63,8 @@ ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 ENV CGO_ENABLED=1
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        apt-get update && \
+        apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross && \
         export CC=aarch64-linux-gnu-gcc; \
         export CXX=aarch64-linux-gnu-g++; \
         export CROSS_COMPILE=aarch64-linux-gnu-; \
