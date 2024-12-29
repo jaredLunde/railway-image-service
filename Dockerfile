@@ -12,6 +12,8 @@ RUN go mod download && go mod tidy
 
 FROM deps AS vips-builder
 ARG VIPS_VERSION=8.16.0
+ARG TARGETOS
+ARG TARGETARCH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
 RUN DEBIAN_FRONTEND=noninteractive \
@@ -50,11 +52,10 @@ RUN cd /tmp && \
 
 FROM vips-builder AS build
 WORKDIR /go/src/app
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
-
+ARG TARGETOS
+ARG TARGETARCH
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app
