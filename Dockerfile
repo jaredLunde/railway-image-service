@@ -55,7 +55,7 @@ ARG TARGETOS
 ARG TARGETARCH
 
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app
