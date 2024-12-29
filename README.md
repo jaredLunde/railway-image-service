@@ -116,10 +116,11 @@ services:
   railway-image-service:
     image: ghcr.io/jaredlunde/railway-image-service:latest
     ports:
-      - "3000:3000"
+      - "8080:8080"
     volumes:
       - ./data:/data
     environment:
+      - PORT=8080
       - SECRET_KEY=your_secret_key_here
       - SIGNATURE_SECRET_KEY=your_signature_secret_key_here
 ```
