@@ -17,8 +17,7 @@ ARG TARGETARCH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
-        dpkg --add-architecture arm64 && \
-        sed -i 's/deb http/deb [arch=amd64,arm64] http/g' /etc/apt/sources.list; \
+        dpkg --add-architecture arm64; \
     fi
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
