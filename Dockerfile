@@ -16,10 +16,15 @@ ARG TARGETOS
 ARG TARGETARCH
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        dpkg --add-architecture arm64 && \
+        sed -i 's/deb http/deb [arch=amd64,arm64] http/g' /etc/apt/sources.list; \
+    fi
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
     apt-get install --no-install-recommends -y \
     ca-certificates automake build-essential curl \
+    $([ "${TARGETARCH}" = "arm64" ] && echo "gcc-aarch64-linux-gnu") \
     meson ninja-build pkg-config \
     gobject-introspection gtk-doc-tools libglib2.0-dev \
     libjpeg62-turbo-dev libpng-dev libwebp-dev libtiff-dev \
@@ -55,7 +60,15 @@ WORKDIR /go/src/app
 ARG TARGETOS
 ARG TARGETARCH
 COPY . .
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=1 CC=${CC:-gcc} go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
+ENV CGO_ENABLED=1
+RUN if [ "${TARGETARCH}" = "arm64" ]; then \
+        export CC=aarch64-linux-gnu-gcc; \
+        export CXX=aarch64-linux-gnu-g++; \
+        export CROSS_COMPILE=aarch64-linux-gnu-; \
+    fi
+RUN go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
 
 FROM debian:stable-slim
 WORKDIR /app
