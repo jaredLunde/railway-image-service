@@ -112,7 +112,6 @@ The service can be configured by setting the environment variables below.
 Create a `docker-compose.yml` file with the following template:
 
 ```yaml
-version: "3.8"
 services:
   railway-image-service:
     image: ghcr.io/jaredlunde/railway-image-service:latest
