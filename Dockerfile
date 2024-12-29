@@ -58,7 +58,9 @@ COPY . .
 RUN echo "Building for OS: $TARGETOS, ARCH: $TARGETARCH" && \
     if [ "$TARGETARCH" = "arm64" ]; then \
         echo "Setting ARM64 specific flags" && \
+        GOARCH=arm64 GOOS=linux \
         CGO_ENABLED=1 CGO_CFLAGS_ALLOW=-Xpreprocessor \
+        CC="gcc -march=armv8-a" \
         go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server; \
     else \
         echo "Building for AMD64" && \
