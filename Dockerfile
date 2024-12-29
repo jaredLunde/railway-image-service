@@ -55,7 +55,16 @@ WORKDIR /go/src/app
 ARG TARGETOS
 ARG TARGETARCH
 COPY . .
-RUN CGO_ENABLED=1 go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server
+RUN echo "Building for OS: $TARGETOS, ARCH: $TARGETARCH" && \
+    if [ "$TARGETARCH" = "arm64" ]; then \
+        echo "Setting ARM64 specific flags" && \
+        CGO_ENABLED=1 CGO_CFLAGS_ALLOW=-Xpreprocessor \
+        go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server; \
+    else \
+        echo "Building for AMD64" && \
+        CGO_ENABLED=1 \
+        go build -trimpath -ldflags="-s -w" -o /go/bin/app ./cmd/server; \
+    fi
 
 FROM debian:stable-slim
 WORKDIR /app
