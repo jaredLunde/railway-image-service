@@ -1,6 +1,5 @@
 # syntax=docker/dockerfile:1
 ARG VERSION=1.23.1
-ARG BUILDPLATFORM=linux/amd64
 ARG BUILDER=docker.io/library/golang
 
 FROM --platform=${BUILDPLATFORM} ${BUILDER}:${VERSION} AS base
