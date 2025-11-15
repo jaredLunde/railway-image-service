@@ -74,7 +74,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     ca-certificates procps curl \
     libglib2.0-0 libjpeg62-turbo libpng16-16 libopenexr-3-1-30 \
     libwebp7 libwebpmux3 libwebpdemux2 libtiff6 libexif12 \
-    libxml2 libpoppler-glib8 libpango1.0-0 libmatio11 \
+    libxml2 libpoppler-glib8 libpango-1.0-0 libmatio12 \
     libopenslide0 libopenjp2-7 libjemalloc2 libgsf-1-114 \
     libfftw3-bin liborc-0.4-0 librsvg2-2 libcfitsio10 \
     libimagequant0 libaom3 libheif1 libspng0 libcgif0 && \
@@ -83,10 +83,11 @@ RUN DEBIAN_FRONTEND=noninteractive \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     update-ca-certificates 2>/dev/null || true
 
-COPY --chown=nonroot:nonroot --from=build /go/bin/app .
-RUN addgroup --system nonroot && \
-    adduser --system --ingroup nonroot nonroot && \
+RUN groupadd --system nonroot && \
+    useradd --system --gid nonroot --no-create-home nonroot && \
     chown -R nonroot:nonroot /app
+
+COPY --chown=nonroot:nonroot --from=build /go/bin/app .
 
 ENV VIPS_WARNING=0 \
     MALLOC_ARENA_MAX=2 \
