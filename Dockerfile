@@ -73,15 +73,15 @@ RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
     apt-get install --no-install-recommends -y \
     ca-certificates procps curl \
-    libglib2.0-0 libjpeg62-turbo libpng16-16 libopenexr-3-1-30 \
+    libglib2.0-0t64 libjpeg62-turbo libpng16-16t64 libopenexr-3-1-30 \
     libwebp7 libwebpmux3 libwebpdemux2 libtiff6 libexif12 \
-    libxml2 libpoppler-glib8 libpango1.0-0 \
+    libxml2 libpoppler-glib8 libpango-1.0-0 \
     libopenslide0 libopenjp2-7 libjemalloc2 libgsf-1-114 \
-    libfftw3-bin liborc-0.4-0 librsvg2-2 libcfitsio10 \
+    libfftw3-bin liborc-0.4-0t64 librsvg2-2 libcfitsio10 \
     libimagequant0 libaom3 libheif1 libspng0 libcgif0 && \
-    ln -sf /usr/lib/*-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
     ldconfig && \
+    ln -sf /usr/lib/*/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     update-ca-certificates 2>/dev/null || true
