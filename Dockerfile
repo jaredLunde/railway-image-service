@@ -74,7 +74,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     ca-certificates procps curl \
     libglib2.0-0 libjpeg62-turbo libpng16-16 libopenexr-3-1-30 \
     libwebp7 libwebpmux3 libwebpdemux2 libtiff6 libexif12 \
-    libxml2 libpoppler-glib8 libpango-1.0-0 libmatio12 \
+    libxml2 libpoppler-glib8 libpango-1.0-0 libmatio11 \
     libopenslide0 libopenjp2-7 libjemalloc2 libgsf-1-114 \
     libfftw3-bin liborc-0.4-0 librsvg2-2 libcfitsio10 \
     libimagequant0 libaom3 libheif1 libspng0 libcgif0 && \
