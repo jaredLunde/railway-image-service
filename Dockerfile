@@ -78,7 +78,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     libopenslide0 libopenjp2-7 libjemalloc2 libgsf-1-114 \
     libfftw3-bin liborc-0.4-0 librsvg2-2 libcfitsio10 \
     libimagequant0 libaom3 libheif1 libspng0 libcgif0 && \
-    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
+    ln -sf /usr/lib/*-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     update-ca-certificates 2>/dev/null || true
