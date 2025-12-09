@@ -80,6 +80,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     libfftw3-bin liborc-0.4-0 librsvg2-2 libcfitsio10 \
     libimagequant0 libaom3 libheif1 libspng0 libcgif0 && \
     ln -sf /usr/lib/*-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/local.conf && \
     ldconfig && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
